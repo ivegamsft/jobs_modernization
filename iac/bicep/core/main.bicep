@@ -8,13 +8,11 @@ targetScope = 'subscription'
 
 param environment string = 'dev'
 param applicationName string = 'jobsite'
-param location string = 'eastus'
+param location string = 'westus'
 param vnetAddressPrefix string = '10.50.0.0/24'
 param sqlAdminUsername string = 'jobsiteadmin'
 @secure()
 param sqlAdminPassword string = newGuid()
-param vpnRootCertificate string = ''
-param vpnClientAddressPool string = '172.16.0.0/24'
 param tags object = {
   Application: 'JobSite'
   Environment: environment
@@ -41,8 +39,6 @@ module coreResources './core-resources.bicep' = {
     vnetAddressPrefix: vnetAddressPrefix
     sqlAdminUsername: sqlAdminUsername
     sqlAdminPassword: sqlAdminPassword
-    vpnRootCertificate: vpnRootCertificate
-    vpnClientAddressPool: vpnClientAddressPool
     tags: tags
   }
 }
@@ -61,4 +57,11 @@ output privateDnsZoneName string = coreResources.outputs.privateDnsZoneName
 output logAnalyticsWorkspaceId string = coreResources.outputs.logAnalyticsWorkspaceId
 output logAnalyticsWorkspaceName string = coreResources.outputs.logAnalyticsWorkspaceName
 output natGatewayPublicIp string = coreResources.outputs.natGatewayPublicIp
-output vpnGatewayPublicIp string = coreResources.outputs.vpnGatewayPublicIp
+output acrId string = coreResources.outputs.acrId
+output acrName string = coreResources.outputs.acrName
+output acrLoginServer string = coreResources.outputs.acrLoginServer
+output containerAppsEnvId string = coreResources.outputs.containerAppsEnvId
+output containerAppsEnvName string = coreResources.outputs.containerAppsEnvName
+output containerAppsEnvDefaultDomain string = coreResources.outputs.containerAppsEnvDefaultDomain
+output containerAppsEnvStaticIp string = coreResources.outputs.containerAppsEnvStaticIp
+output containerAppsSubnetId string = coreResources.outputs.containerAppsSubnetId

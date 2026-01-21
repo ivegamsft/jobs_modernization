@@ -137,7 +137,7 @@ $vpnCert = New-SelfSignedCertificate `
     -HashAlgorithm SHA256 `
     -KeyLength 2048 `
     -KeyUsageProperty Sign `
-    -KeyUsage CertSign,CRLSign,DigitalSignature `
+    -KeyUsage CertSign, CRLSign, DigitalSignature `
     -CertStoreLocation 'Cert:\CurrentUser\My' `
     -NotAfter (Get-Date).AddYears(3)
 
@@ -178,12 +178,19 @@ if (-not $SkipCore) {
     $coreDeploymentName = "jobsite-core-$Environment-$timestamp"
     $coreBicepPath = Join-Path $bicepRoot 'core\main.bicep'
 
-    $coreParams = @(
-        "environment=$Environment"
-        "location=$Location"
-        "sqlAdminPassword=$SqlAdminPassword"
-        "vpnRootCertificate=$vpnRootCertBase64"
-    )
+    $coreParamsFile = Join-Path $tempPath "core-params.json"
+    $coreParamsJson = @{
+        '$schema'        = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
+        'contentVersion' = '1.0.0.0'
+        'parameters'     = @{
+            'environment'        = @{ 'value' = $Environment }
+            'location'           = @{ 'value' = $Location }
+            'sqlAdminPassword'   = @{ 'value' = $SqlAdminPassword }
+            'vpnRootCertificate' = @{ 'value' = $vpnRootCertBase64 }
+        }
+    } | ConvertTo-Json -Depth 10
+    
+    [System.IO.File]::WriteAllText($coreParamsFile, $coreParamsJson)
 
     if ($WhatIf) {
         Write-Host "🔍 WHAT-IF: Would deploy core infrastructure" -ForegroundColor Yellow
@@ -194,7 +201,7 @@ if (-not $SkipCore) {
             --name $coreDeploymentName `
             --location $Location `
             --template-file $coreBicepPath `
-            --parameters $coreParams `
+            --parameters $coreParamsFile `
             --output json | ConvertFrom-Json
 
         if ($LASTEXITCODE -ne 0) {
@@ -224,24 +231,31 @@ if (-not $SkipIaas -and -not $WhatIf) {
     $iaasDeploymentName = "jobsite-iaas-$Environment-$timestamp"
     $iaasBicepPath = Join-Path $bicepRoot 'iaas\main.bicep'
 
-    $iaasParams = @(
-        "environment=$Environment"
-        "location=$Location"
-        "vnetId=$($coreOutputs.vnetId.value)"
-        "frontendSubnetId=$($coreOutputs.frontendSubnetId.value)"
-        "dataSubnetId=$($coreOutputs.dataSubnetId.value)"
-        "logAnalyticsWorkspaceId=$($coreOutputs.logAnalyticsWorkspaceId.value)"
-        "adminPassword=$VmAdminPassword"
-        "appGatewayCertData=$appGwCertBase64"
-        "appGatewayCertPassword=$AppGatewayCertPassword"
-    )
+    $iaasParamsFile = Join-Path $tempPath "iaas-params.json"
+    $iaasParamsJson = @{
+        '$schema'        = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
+        'contentVersion' = '1.0.0.0'
+        'parameters'     = @{
+            'environment'             = @{ 'value' = $Environment }
+            'location'                = @{ 'value' = $Location }
+            'vnetId'                  = @{ 'value' = $coreOutputs.vnetId.value }
+            'frontendSubnetId'        = @{ 'value' = $coreOutputs.frontendSubnetId.value }
+            'dataSubnetId'            = @{ 'value' = $coreOutputs.dataSubnetId.value }
+            'logAnalyticsWorkspaceId' = @{ 'value' = $coreOutputs.logAnalyticsWorkspaceId.value }
+            'adminPassword'           = @{ 'value' = $VmAdminPassword }
+            'appGatewayCertData'      = @{ 'value' = $appGwCertBase64 }
+            'appGatewayCertPassword'  = @{ 'value' = $AppGatewayCertPassword }
+        }
+    } | ConvertTo-Json -Depth 10
+    
+    [System.IO.File]::WriteAllText($iaasParamsFile, $iaasParamsJson)
 
     Write-Host "🚀 Deploying IAAS infrastructure..." -ForegroundColor Yellow
     $iaasResult = az deployment sub create `
         --name $iaasDeploymentName `
         --location $Location `
         --template-file $iaasBicepPath `
-        --parameters $iaasParams `
+        --parameters $iaasParamsFile `
         --output json | ConvertFrom-Json
 
     if ($LASTEXITCODE -ne 0) {
@@ -271,21 +285,28 @@ if (-not $SkipPaas -and -not $WhatIf) {
     $paasDeploymentName = "jobsite-paas-$Environment-$timestamp"
     $paasBicepPath = Join-Path $bicepRoot 'paas\main.bicep'
 
-    $paasParams = @(
-        "environment=$Environment"
-        "location=$Location"
-        "sqlAdminPassword=$SqlAdminPassword"
-        "peSubnetId=$($coreOutputs.peSubnetId.value)"
-        "keyVaultName=$($coreOutputs.keyVaultName.value)"
-        "logAnalyticsWorkspaceId=$($coreOutputs.logAnalyticsWorkspaceId.value)"
-    )
+    $paasParamsFile = Join-Path $tempPath "paas-params.json"
+    $paasParamsJson = @{
+        '$schema'        = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
+        'contentVersion' = '1.0.0.0'
+        'parameters'     = @{
+            'environment'             = @{ 'value' = $Environment }
+            'location'                = @{ 'value' = $Location }
+            'sqlAdminPassword'        = @{ 'value' = $SqlAdminPassword }
+            'peSubnetId'              = @{ 'value' = $coreOutputs.peSubnetId.value }
+            'keyVaultName'            = @{ 'value' = $coreOutputs.keyVaultName.value }
+            'logAnalyticsWorkspaceId' = @{ 'value' = $coreOutputs.logAnalyticsWorkspaceId.value }
+        }
+    } | ConvertTo-Json -Depth 10
+    
+    [System.IO.File]::WriteAllText($paasParamsFile, $paasParamsJson)
 
     Write-Host "🚀 Deploying PAAS infrastructure..." -ForegroundColor Yellow
     $paasResult = az deployment sub create `
         --name $paasDeploymentName `
         --location $Location `
         --template-file $paasBicepPath `
-        --parameters $paasParams `
+        --parameters $paasParamsFile `
         --output json | ConvertFrom-Json
 
     if ($LASTEXITCODE -ne 0) {

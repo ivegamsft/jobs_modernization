@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.39.26.7824",
-      "templateHash": "3314369693124627457"
+      "templateHash": "12070825706039995445"
     }
   },
   "parameters": {
@@ -21,16 +21,10 @@
       "type": "string",
       "defaultValue": "eastus"
     },
-    "vnetId": {
-      "type": "string"
-    },
     "frontendSubnetId": {
       "type": "string"
     },
     "dataSubnetId": {
-      "type": "string"
-    },
-    "logAnalyticsWorkspaceId": {
       "type": "string"
     },
     "adminUsername": {
@@ -100,17 +94,11 @@
           "location": {
             "value": "[parameters('location')]"
           },
-          "vnetId": {
-            "value": "[parameters('vnetId')]"
-          },
           "frontendSubnetId": {
             "value": "[parameters('frontendSubnetId')]"
           },
           "dataSubnetId": {
             "value": "[parameters('dataSubnetId')]"
-          },
-          "logAnalyticsWorkspaceId": {
-            "value": "[parameters('logAnalyticsWorkspaceId')]"
           },
           "adminUsername": {
             "value": "[parameters('adminUsername')]"
@@ -144,7 +132,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.39.26.7824",
-              "templateHash": "5177743678828649827"
+              "templateHash": "15158614596931837696"
             }
           },
           "parameters": {
@@ -157,16 +145,10 @@
             "location": {
               "type": "string"
             },
-            "vnetId": {
-              "type": "string"
-            },
             "frontendSubnetId": {
               "type": "string"
             },
             "dataSubnetId": {
-              "type": "string"
-            },
-            "logAnalyticsWorkspaceId": {
               "type": "string"
             },
             "adminUsername": {
@@ -200,10 +182,7 @@
             "vmssName": "[format('{0}-vmss-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
             "sqlVmName": "[format('{0}-sqlvm-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
             "appGatewayName": "[format('{0}-appgw-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
-            "publicIpAppGwName": "[format('{0}-pip-appgw-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
-            "frontendSubnetName": "[split(parameters('frontendSubnetId'), '/')[10]]",
-            "dataSubnetName": "[split(parameters('dataSubnetId'), '/')[10]]",
-            "vnetName": "[split(parameters('vnetId'), '/')[8]]"
+            "publicIpAppGwName": "[format('{0}-pip-appgw-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]"
           },
           "resources": [
             {

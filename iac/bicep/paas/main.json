@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.39.26.7824",
-      "templateHash": "15987740716525809154"
+      "templateHash": "15655654707889554047"
     }
   },
   "parameters": {
@@ -44,15 +44,8 @@
     "peSubnetId": {
       "type": "string"
     },
-    "keyVaultName": {
-      "type": "string"
-    },
     "logAnalyticsWorkspaceId": {
       "type": "string"
-    },
-    "privateDnsZoneName": {
-      "type": "string",
-      "defaultValue": "jobsite.internal"
     },
     "resourceGroupName": {
       "type": "string",
@@ -113,14 +106,8 @@
           "peSubnetId": {
             "value": "[parameters('peSubnetId')]"
           },
-          "keyVaultName": {
-            "value": "[parameters('keyVaultName')]"
-          },
           "logAnalyticsWorkspaceId": {
             "value": "[parameters('logAnalyticsWorkspaceId')]"
-          },
-          "privateDnsZoneName": {
-            "value": "[parameters('privateDnsZoneName')]"
           },
           "tags": {
             "value": "[parameters('tags')]"
@@ -133,7 +120,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.39.26.7824",
-              "templateHash": "9254041730182459212"
+              "templateHash": "1167530391983243788"
             }
           },
           "parameters": {
@@ -164,13 +151,7 @@
             "peSubnetId": {
               "type": "string"
             },
-            "keyVaultName": {
-              "type": "string"
-            },
             "logAnalyticsWorkspaceId": {
-              "type": "string"
-            },
-            "privateDnsZoneName": {
               "type": "string"
             },
             "tags": {

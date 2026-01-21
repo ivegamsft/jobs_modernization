@@ -9,6 +9,7 @@ This deployment infrastructure is designed for **complete automation** with **ze
 The deployment is organized into three subscription-scoped modules:
 
 ### 1. **Core Infrastructure** (`core/`)
+
 - **Resource Group**: `jobsite-core-{environment}-rg`
 - **Resources**:
   - Virtual Network with 7 subnets (frontend, data, vpn gateway, private endpoint, GitHub runners, AKS, container apps)
@@ -22,6 +23,7 @@ The deployment is organized into three subscription-scoped modules:
   - Unique resource names using `uniqueString()`
 
 ### 2. **IAAS Infrastructure** (`iaas/`)
+
 - **Resource Group**: `jobsite-iaas-{environment}-rg`
 - **Resources**:
   - Virtual Machine Scale Set (web/app tier)
@@ -34,6 +36,7 @@ The deployment is organized into three subscription-scoped modules:
   - Self-signed certificates (VPN root cert, App Gateway PFX cert)
 
 ### 3. **PAAS Infrastructure** (`paas/`)
+
 - **Resource Group**: `jobsite-paas-{environment}-rg`
 - **Resources**:
   - App Service Plan (S1 by default)
@@ -57,6 +60,7 @@ main.bicep (targetScope='subscription')
 ```
 
 This pattern allows:
+
 - ✅ Single script to create resource groups and deploy resources
 - ✅ Clean separation of concerns
 - ✅ Proper Bicep scope handling
@@ -65,6 +69,7 @@ This pattern allows:
 ## Quick Start
 
 ### Prerequisites
+
 ```powershell
 # Install Azure CLI
 winget install Microsoft.AzureCLI
@@ -77,12 +82,14 @@ az account set --subscription "your-subscription-id"
 ```
 
 ### Deploy All Infrastructure (Default: dev environment)
+
 ```powershell
 cd iac/scripts
 .\Deploy-Bicep.ps1
 ```
 
 This single command will:
+
 1. Generate all passwords automatically
 2. Generate self-signed certificates (VPN root, App Gateway)
 3. Create all three resource groups
@@ -92,6 +99,7 @@ This single command will:
 7. Display all generated passwords for you to save
 
 ### Deploy Specific Environments
+
 ```powershell
 # Production deployment
 .\Deploy-Bicep.ps1 -Environment prod -Location westus2
@@ -101,6 +109,7 @@ This single command will:
 ```
 
 ### Deploy Individual Modules
+
 ```powershell
 # Deploy only core infrastructure
 .\Deploy-Bicep.ps1 -SkipIaas -SkipPaas
@@ -113,6 +122,7 @@ This single command will:
 ```
 
 ### Override Auto-Generated Values
+
 ```powershell
 # Use custom passwords
 .\Deploy-Bicep.ps1 `
@@ -130,22 +140,23 @@ This single command will:
 
 ## Script Parameters
 
-| Parameter | Required | Default | Description |
-|-----------|----------|---------|-------------|
-| `-Environment` | No | `dev` | Deployment environment (dev, staging, prod) |
-| `-Location` | No | `eastus` | Azure region for all resources |
-| `-SubscriptionId` | No | Current | Azure subscription ID |
-| `-SqlAdminPassword` | No | Auto-generated | SQL Server admin password |
-| `-VmAdminPassword` | No | Auto-generated | VM admin password |
-| `-AppGatewayCertPassword` | No | Auto-generated | Certificate password for App Gateway |
-| `-SkipCore` | No | `false` | Skip core infrastructure deployment |
-| `-SkipIaas` | No | `false` | Skip IAAS infrastructure deployment |
-| `-SkipPaas` | No | `false` | Skip PAAS infrastructure deployment |
-| `-WhatIf` | No | `false` | Preview deployment without executing |
+| Parameter                 | Required | Default        | Description                                 |
+| ------------------------- | -------- | -------------- | ------------------------------------------- |
+| `-Environment`            | No       | `dev`          | Deployment environment (dev, staging, prod) |
+| `-Location`               | No       | `eastus`       | Azure region for all resources              |
+| `-SubscriptionId`         | No       | Current        | Azure subscription ID                       |
+| `-SqlAdminPassword`       | No       | Auto-generated | SQL Server admin password                   |
+| `-VmAdminPassword`        | No       | Auto-generated | VM admin password                           |
+| `-AppGatewayCertPassword` | No       | Auto-generated | Certificate password for App Gateway        |
+| `-SkipCore`               | No       | `false`        | Skip core infrastructure deployment         |
+| `-SkipIaas`               | No       | `false`        | Skip IAAS infrastructure deployment         |
+| `-SkipPaas`               | No       | `false`        | Skip PAAS infrastructure deployment         |
+| `-WhatIf`                 | No       | `false`        | Preview deployment without executing        |
 
 ## What Gets Auto-Generated
 
 ### Passwords
+
 - **SQL Admin Password**: 16-character random password with letters, numbers, symbols
 - **VM Admin Password**: 16-character random password with letters, numbers, symbols
 - **App Gateway Cert Password**: 16-character random password
@@ -153,11 +164,11 @@ This single command will:
 All passwords are displayed at the end of deployment and should be saved securely.
 
 ### Certificates
+
 - **VPN Root Certificate**: Self-signed root CA for VPN client authentication
   - Subject: `CN=jobsite-vpn-root`
   - Valid: 3 years
   - Format: CER (public key only) → base64
-  
 - **App Gateway Certificate**: Self-signed SSL certificate for App Gateway
   - Subject: `CN=jobsite-appgw`
   - DNS Names: `*.jobsite.local`, `jobsite.local`
@@ -165,9 +176,11 @@ All passwords are displayed at the end of deployment and should be saved securel
   - Format: PFX (with private key) → base64
 
 ### Resource Names
+
 All resources use the pattern: `{applicationName}-{resourceType}-{environment}-{uniqueSuffix}`
 
 Example for `dev` environment:
+
 - VNet: `jobsite-dev-vnet-abc123xyz`
 - Key Vault: `jobsite-dev-kv-abc123xyz`
 - VMSS: `jobsite-dev-vmss-abc123xyz`
@@ -276,29 +289,36 @@ az bicep build --file main.bicep
 ## Troubleshooting
 
 ### Issue: "Not logged in to Azure"
+
 ```powershell
 az login
 ```
 
 ### Issue: "Insufficient permissions"
+
 Ensure your Azure account has:
+
 - Contributor role on the subscription
 - Key Vault Administrator role (or enable RBAC authorization)
 
 ### Issue: "VPN Gateway deployment is slow"
+
 This is expected. VPN Gateways can take 30-45 minutes to provision. The script will wait.
 
 ### Issue: "Want to see what will be deployed without actually deploying"
+
 ```powershell
 .\Deploy-Bicep.ps1 -WhatIf
 ```
 
 ### Issue: "Need to redeploy after failure"
+
 The script is idempotent. Simply run it again with the same parameters. Azure will update existing resources.
 
 ## Security Considerations
 
 ### Auto-Generated Passwords
+
 - Passwords are 16 characters with mixed case, numbers, and symbols
 - Strong enough for non-production environments
 - **For production**, always use custom passwords:
@@ -307,6 +327,7 @@ The script is idempotent. Simply run it again with the same parameters. Azure wi
   ```
 
 ### Certificates
+
 - Self-signed certificates are suitable for dev/test environments
 - **For production**, use certificates from a trusted CA:
   1. Generate certificates from CA
@@ -314,11 +335,13 @@ The script is idempotent. Simply run it again with the same parameters. Azure wi
   3. Pass as parameters in the Bicep templates
 
 ### Key Vault
+
 - RBAC authorization enabled by default
 - No access policies pre-configured
 - Assign roles using Azure Portal or CLI after deployment
 
 ### Network Security
+
 - NAT Gateway provides secure outbound connectivity
 - VPN Gateway allows secure remote access
 - Private endpoints for SQL Database
@@ -327,6 +350,7 @@ The script is idempotent. Simply run it again with the same parameters. Azure wi
 ## Next Steps After Deployment
 
 1. **Configure Key Vault Access**
+
    ```powershell
    # Grant yourself Key Vault Administrator role
    az role assignment create \
@@ -379,6 +403,7 @@ az group delete --name jobsite-paas-dev-rg --yes --no-wait
 ## Support
 
 For issues or questions:
+
 1. Review this README
 2. Check Bicep validation: `az bicep build --file main.bicep`
 3. Review Azure deployment logs in Azure Portal

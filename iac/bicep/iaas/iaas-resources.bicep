@@ -7,10 +7,8 @@ targetScope = 'resourceGroup'
 param environment string
 param applicationName string
 param location string
-param vnetId string
 param frontendSubnetId string
 param dataSubnetId string
-param logAnalyticsWorkspaceId string
 param adminUsername string
 param vmSize string
 param vmssInstanceCount int
@@ -31,10 +29,6 @@ var vmssName = '${resourcePrefix}-vmss-${uniqueSuffix}'
 var sqlVmName = '${resourcePrefix}-sqlvm-${uniqueSuffix}'
 var appGatewayName = '${resourcePrefix}-appgw-${uniqueSuffix}'
 var publicIpAppGwName = '${resourcePrefix}-pip-appgw-${uniqueSuffix}'
-
-var frontendSubnetName = split(frontendSubnetId, '/')[10]
-var dataSubnetName = split(dataSubnetId, '/')[10]
-var vnetName = split(vnetId, '/')[8]
 
 // Public IP for Application Gateway
 resource publicIpAppGw 'Microsoft.Network/publicIPAddresses@2023-11-01' = {
@@ -105,7 +99,11 @@ resource vmss 'Microsoft.Compute/virtualMachineScaleSets@2023-09-01' = {
                     }
                     applicationGatewayBackendAddressPools: [
                       {
-                        id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', appGatewayName, 'vmss-backend-pool')
+                        id: resourceId(
+                          'Microsoft.Network/applicationGateways/backendAddressPools',
+                          appGatewayName,
+                          'vmss-backend-pool'
+                        )
                       }
                     ]
                   }
@@ -303,6 +301,7 @@ resource appGateway 'Microsoft.Network/applicationGateways@2023-11-01' = {
           port: 80
           protocol: 'Http'
           cookieBasedAffinity: 'Disabled'
+          pickHostNameFromBackendAddress: true
           probe: {
             id: resourceId('Microsoft.Network/applicationGateways/probes', appGatewayName, 'health-probe')
           }
@@ -314,7 +313,11 @@ resource appGateway 'Microsoft.Network/applicationGateways@2023-11-01' = {
         name: 'appGatewayHttpsListener'
         properties: {
           frontendIPConfiguration: {
-            id: resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', appGatewayName, 'appGatewayFrontendIP')
+            id: resourceId(
+              'Microsoft.Network/applicationGateways/frontendIPConfigurations',
+              appGatewayName,
+              'appGatewayFrontendIP'
+            )
           }
           frontendPort: {
             id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', appGatewayName, 'port_443')
@@ -329,7 +332,11 @@ resource appGateway 'Microsoft.Network/applicationGateways@2023-11-01' = {
         name: 'appGatewayHttpListener'
         properties: {
           frontendIPConfiguration: {
-            id: resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', appGatewayName, 'appGatewayFrontendIP')
+            id: resourceId(
+              'Microsoft.Network/applicationGateways/frontendIPConfigurations',
+              appGatewayName,
+              'appGatewayFrontendIP'
+            )
           }
           frontendPort: {
             id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', appGatewayName, 'port_80')
@@ -345,13 +352,25 @@ resource appGateway 'Microsoft.Network/applicationGateways@2023-11-01' = {
           ruleType: 'Basic'
           priority: 100
           httpListener: {
-            id: resourceId('Microsoft.Network/applicationGateways/httpListeners', appGatewayName, 'appGatewayHttpsListener')
+            id: resourceId(
+              'Microsoft.Network/applicationGateways/httpListeners',
+              appGatewayName,
+              'appGatewayHttpsListener'
+            )
           }
           backendAddressPool: {
-            id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', appGatewayName, 'vmss-backend-pool')
+            id: resourceId(
+              'Microsoft.Network/applicationGateways/backendAddressPools',
+              appGatewayName,
+              'vmss-backend-pool'
+            )
           }
           backendHttpSettings: {
-            id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', appGatewayName, 'appGatewayBackendHttpSettings')
+            id: resourceId(
+              'Microsoft.Network/applicationGateways/backendHttpSettingsCollection',
+              appGatewayName,
+              'appGatewayBackendHttpSettings'
+            )
           }
         }
       }
@@ -361,10 +380,18 @@ resource appGateway 'Microsoft.Network/applicationGateways@2023-11-01' = {
           ruleType: 'Basic'
           priority: 200
           httpListener: {
-            id: resourceId('Microsoft.Network/applicationGateways/httpListeners', appGatewayName, 'appGatewayHttpListener')
+            id: resourceId(
+              'Microsoft.Network/applicationGateways/httpListeners',
+              appGatewayName,
+              'appGatewayHttpListener'
+            )
           }
           redirectConfiguration: {
-            id: resourceId('Microsoft.Network/applicationGateways/redirectConfigurations', appGatewayName, 'httpToHttpsRedirect')
+            id: resourceId(
+              'Microsoft.Network/applicationGateways/redirectConfigurations',
+              appGatewayName,
+              'httpToHttpsRedirect'
+            )
           }
         }
       }
@@ -375,7 +402,11 @@ resource appGateway 'Microsoft.Network/applicationGateways@2023-11-01' = {
         properties: {
           redirectType: 'Permanent'
           targetListener: {
-            id: resourceId('Microsoft.Network/applicationGateways/httpListeners', appGatewayName, 'appGatewayHttpsListener')
+            id: resourceId(
+              'Microsoft.Network/applicationGateways/httpListeners',
+              appGatewayName,
+              'appGatewayHttpsListener'
+            )
           }
           includePath: true
           includeQueryString: true

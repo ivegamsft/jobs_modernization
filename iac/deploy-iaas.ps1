@@ -10,9 +10,9 @@ Write-Host ""
 
 # Generate passwords and certificate
 Write-Host "1. Generating passwords and certificate..." -ForegroundColor Yellow
-$sqlPassword = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 20 | ForEach-Object {[char]$_}) + "!Aa1"
-$vmPassword = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 20 | ForEach-Object {[char]$_}) + "!Aa1"
-$certPassword = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 20 | ForEach-Object {[char]$_}) + "!Aa1"
+$sqlPassword = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 20 | ForEach-Object { [char]$_ }) + "!Aa1"
+$vmPassword = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 20 | ForEach-Object { [char]$_ }) + "!Aa1"
+$certPassword = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 20 | ForEach-Object { [char]$_ }) + "!Aa1"
 
 $cert = New-SelfSignedCertificate -DnsName "jobsite-appgw.local" -CertStoreLocation "Cert:\CurrentUser\My" -NotAfter (Get-Date).AddYears(2) -KeyExportPolicy Exportable
 $pfxPath = "$env:TEMP\appgw-$([Guid]::NewGuid().ToString()).pfx"
@@ -56,23 +56,24 @@ Write-Host ""
 Set-Location "c:\git\jobs_modernization\iac\bicep\iaas"
 
 az deployment group create `
-  --name "jobsite-iaas-dev" `
-  --resource-group "jobsite-iaas-dev-rg" `
-  --template-file "main.bicep" `
-  --parameters "environment=dev" `
-  --parameters "vnetId=$vnetId" `
-  --parameters "frontendSubnetId=$frontendSubnetId" `
-  --parameters "dataSubnetId=$dataSubnetId" `
-  --parameters "logAnalyticsWorkspaceId=$logAnalyticsWorkspaceId" `
-  --parameters "sqlAdminPassword=$sqlPassword" `
-  --parameters "vmAdminPassword=$vmPassword" `
-  --parameters "appGatewayCertData=$certBase64" `
-  --parameters "appGatewayCertPassword=$certPassword"
+    --name "jobsite-iaas-dev" `
+    --resource-group "jobsite-iaas-dev-rg" `
+    --template-file "main.bicep" `
+    --parameters "environment=dev" `
+    --parameters "vnetId=$vnetId" `
+    --parameters "frontendSubnetId=$frontendSubnetId" `
+    --parameters "dataSubnetId=$dataSubnetId" `
+    --parameters "logAnalyticsWorkspaceId=$logAnalyticsWorkspaceId" `
+    --parameters "sqlAdminPassword=$sqlPassword" `
+    --parameters "vmAdminPassword=$vmPassword" `
+    --parameters "appGatewayCertData=$certBase64" `
+    --parameters "appGatewayCertPassword=$certPassword"
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host "✅ IAAS deployment completed successfully!" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host ""
     Write-Host "❌ IAAS deployment failed" -ForegroundColor Red
     exit 1

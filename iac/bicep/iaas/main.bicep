@@ -7,17 +7,15 @@ targetScope = 'subscription'
 
 param environment string = 'dev'
 param applicationName string = 'jobsite'
-param location string = 'eastus'
-param vnetId string
+param location string = 'westus'
 param frontendSubnetId string
 param dataSubnetId string
-param logAnalyticsWorkspaceId string
 param adminUsername string = 'azureadmin'
 @secure()
 param adminPassword string = newGuid()
-param vmSize string = 'Standard_D2s_v3'
+param vmSize string = 'Standard_D2s_v4'
 param vmssInstanceCount int = 2
-param sqlVmSize string = 'Standard_D4s_v3'
+param sqlVmSize string = 'Standard_D4s_v4'
 @secure()
 param appGatewayCertData string
 @secure()
@@ -44,10 +42,8 @@ module iaasResources './iaas-resources.bicep' = {
     environment: environment
     applicationName: applicationName
     location: location
-    vnetId: vnetId
     frontendSubnetId: frontendSubnetId
     dataSubnetId: dataSubnetId
-    logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
     adminUsername: adminUsername
     adminPassword: adminPassword
     vmSize: vmSize

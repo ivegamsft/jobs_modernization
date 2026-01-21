@@ -11,8 +11,6 @@ param vnetAddressPrefix string
 param sqlAdminUsername string
 @secure()
 param sqlAdminPassword string
-param vpnRootCertificate string
-param vpnClientAddressPool string
 param tags object
 
 // Variables
@@ -54,11 +52,11 @@ var subnetConfig = {
 var natGatewayName = '${resourcePrefix}-nat-${uniqueSuffix}'
 var publicIpNatName = '${resourcePrefix}-pip-nat-${uniqueSuffix}'
 var vnetName = '${resourcePrefix}-vnet-${uniqueSuffix}'
-var vpnGatewayName = '${resourcePrefix}-vpn-gw-${uniqueSuffix}'
-var publicIpVpnName = '${resourcePrefix}-pip-vpn-${uniqueSuffix}'
 var privateDnsZoneName = '${applicationName}.internal'
-var keyVaultName = '${resourcePrefix}-kv-${uniqueSuffix}'
+var keyVaultName = 'kv-${environment}-${replace(location, ' ', '')}-${take(uniqueSuffix, 6)}'
 var logAnalyticsWorkspaceName = '${resourcePrefix}-la-${uniqueSuffix}'
+var acrName = '${applicationName}${environment}acr${uniqueSuffix}'
+var containerAppsEnvName = '${resourcePrefix}-cae-${uniqueSuffix}'
 
 // Log Analytics
 resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
@@ -102,19 +100,6 @@ resource natGateway 'Microsoft.Network/natGateways@2023-11-01' = {
         id: publicIpNat.id
       }
     ]
-  }
-}
-
-// VPN Public IP
-resource publicIpVpn 'Microsoft.Network/publicIPAddresses@2023-11-01' = {
-  name: publicIpVpnName
-  location: location
-  tags: tags
-  sku: {
-    name: 'Standard'
-  }
-  properties: {
-    publicIPAllocationMethod: 'Static'
   }
 }
 
@@ -205,61 +190,6 @@ resource vnet 'Microsoft.Network/virtualNetworks@2023-11-01' = {
   }
 }
 
-// VPN Gateway
-resource vpnGateway 'Microsoft.Network/virtualNetworkGateways@2023-11-01' = {
-  name: vpnGatewayName
-  location: location
-  tags: tags
-  properties: {
-    gatewayType: 'Vpn'
-    vpnType: 'RouteBased'
-    sku: {
-      name: 'VpnGw1'
-      tier: 'VpnGw1'
-    }
-    ipConfigurations: [
-      {
-        name: 'vnetGatewayConfig'
-        properties: {
-          privateIPAllocationMethod: 'Dynamic'
-          subnet: {
-            id: resourceId('Microsoft.Network/virtualNetworks/subnets', vnet.name, subnetConfig.vpnGateway.name)
-          }
-          publicIPAddress: {
-            id: publicIpVpn.id
-          }
-        }
-      }
-    ]
-    vpnClientConfiguration: vpnRootCertificate != '' ? {
-      vpnClientAddressPool: {
-        addressPrefixes: [
-          vpnClientAddressPool
-        ]
-      }
-      vpnClientProtocols: [
-        'IkeV2'
-        'OpenVPN'
-      ]
-      vpnAuthenticationTypes: [
-        'Certificate'
-        'AAD'
-      ]
-      aadTenant: '${az.environment().authentication.loginEndpoint}${subscription().tenantId}/'
-      aadAudience: '41b23e61-6c1e-4545-b367-cd1864d40ea'
-      aadIssuer: 'https://sts.windows.net/${subscription().tenantId}/'
-      vpnClientRootCertificates: [
-        {
-          name: 'RootCert'
-          properties: {
-            publicCertData: vpnRootCertificate
-          }
-        }
-      ]
-    } : null
-  }
-}
-
 // Private DNS Zone
 resource privateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
   name: privateDnsZoneName
@@ -318,12 +248,158 @@ resource sqlAdminPasswordSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' =
   }
 }
 
+// Azure Container Registry
+resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
+  name: acrName
+  location: location
+  tags: tags
+  sku: {
+    name: 'Premium'
+  }
+  properties: {
+    adminUserEnabled: false
+    publicNetworkAccess: 'Disabled'
+    networkRuleBypassOptions: 'AzureServices'
+    zoneRedundancy: 'Disabled'
+  }
+}
+
+// ACR Private Endpoint
+resource acrPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-11-01' = {
+  name: '${acrName}-pe'
+  location: location
+  tags: tags
+output acrId string = acr.id
+output acrName string = acr.name
+output acrLoginServer string = acr.properties.loginServer
+output containerAppsEnvId string = containerAppsEnv.id
+output containerAppsEnvName string = containerAppsEnv.name
+output containerAppsEnvDefaultDomain string = containerAppsEnv.properties.defaultDomain
+output containerAppsEnvStaticIp string = containerAppsEnv.properties.staticIp
+output containerAppsSubnetId string = resourceId(
+  'Microsoft.Network/virtualNetworks/subnets',
+  vnet.name,
+  subnetConfig.containerApps.name
+)
+  properties: {
+    subnet: {
+      id: resourceId('Microsoft.Network/virtualNetworks/subnets', vnet.name, subnetConfig.privateEndpoint.name)
+    }
+    privateLinkServiceConnections: [
+      {
+        name: '${acrName}-pe-connection'
+        properties: {
+          privateLinkServiceId: acr.id
+          groupIds: [
+            'registry'
+          ]
+        }
+      }
+    ]
+  }
+}
+
+// ACR Private DNS Zone
+resource acrPrivateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
+  name: 'privatelink.azurecr.io'
+  location: 'global'
+  tags: tags
+}
+
+// ACR Private DNS Zone VNet Link
+resource acrPrivateDnsZoneVnetLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
+  parent: acrPrivateDnsZone
+  name: '${acrPrivateDnsZone.name}-vnetlink'
+  location: 'global'
+  tags: tags
+  properties: {
+    registrationEnabled: false
+    virtualNetwork: {
+      id: vnet.id
+    }
+  }
+}
+
+// ACR Private Endpoint DNS Group
+resource acrPrivateEndpointDnsGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-11-01' = {
+  parent: acrPrivateEndpoint
+  name: 'default'
+  properties: {
+    privateDnsZoneConfigs: [
+      {
+        name: 'privatelink-azurecr-io'
+        properties: {
+          privateDnsZoneId: acrPrivateDnsZone.id
+        }
+      }
+    ]
+  }
+}
+
+// Container Apps Environment
+resource containerAppsEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
+  name: containerAppsEnvName
+  location: location
+  tags: tags
+  properties: {
+    vnetConfiguration: {
+      infrastructureSubnetId: resourceId(
+        'Microsoft.Network/virtualNetworks/subnets',
+        vnet.name,
+        subnetConfig.containerApps.name
+      )
+      internal: true
+    }
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsConfiguration: {
+        customerId: logAnalyticsWorkspace.properties.customerId
+        sharedKey: logAnalyticsWorkspace.listKeys().primarySharedKey
+      }
+    }
+    zoneRedundant: false
+  }
+}
+
+// Container Apps Environment Diagnostics
+resource containerAppsEnvDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'diagnostics'
+  scope: containerAppsEnv
+  properties: {
+    workspaceId: logAnalyticsWorkspace.id
+    logs: [
+      {
+        category: 'ContainerAppConsoleLogs'
+        enabled: true
+      }
+      {
+        category: 'ContainerAppSystemLogs'
+        enabled: true
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+      }
+    ]
+  }
+}
+
 // Outputs
 output vnetId string = vnet.id
 output vnetName string = vnet.name
-output frontendSubnetId string = resourceId('Microsoft.Network/virtualNetworks/subnets', vnet.name, subnetConfig.frontend.name)
+output frontendSubnetId string = resourceId(
+  'Microsoft.Network/virtualNetworks/subnets',
+  vnet.name,
+  subnetConfig.frontend.name
+)
 output dataSubnetId string = resourceId('Microsoft.Network/virtualNetworks/subnets', vnet.name, subnetConfig.data.name)
-output peSubnetId string = resourceId('Microsoft.Network/virtualNetworks/subnets', vnet.name, subnetConfig.privateEndpoint.name)
+output peSubnetId string = resourceId(
+  'Microsoft.Network/virtualNetworks/subnets',
+  vnet.name,
+  subnetConfig.privateEndpoint.name
+)
 output keyVaultId string = keyVault.id
 output keyVaultName string = keyVault.name
 output privateDnsZoneId string = privateDnsZone.id
@@ -331,4 +407,3 @@ output privateDnsZoneName string = privateDnsZone.name
 output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.id
 output logAnalyticsWorkspaceName string = logAnalyticsWorkspace.name
 output natGatewayPublicIp string = publicIpNat.properties.ipAddress
-output vpnGatewayPublicIp string = publicIpVpn.properties.ipAddress

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.39.26.7824",
-      "templateHash": "12629359959461619993"
+      "templateHash": "15256089005474970015"
     }
   },
   "parameters": {
@@ -107,7 +107,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.39.26.7824",
-              "templateHash": "16727126671178590501"
+              "templateHash": "3961340997340699281"
             }
           },
           "parameters": {
@@ -178,7 +178,7 @@
             "vpnGatewayName": "[format('{0}-vpn-gw-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
             "publicIpVpnName": "[format('{0}-pip-vpn-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
             "privateDnsZoneName": "[format('{0}.internal', parameters('applicationName'))]",
-            "keyVaultName": "[format('{0}-kv-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
+            "keyVaultName": "[format('kv-{0}-{1}', take(variables('uniqueSuffix'), 8), parameters('environment'))]",
             "logAnalyticsWorkspaceName": "[format('{0}-la-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]"
           },
           "resources": [
@@ -360,7 +360,7 @@
                     }
                   }
                 ],
-                "vpnClientConfiguration": "[if(not(equals(parameters('vpnRootCertificate'), '')), createObject('vpnClientAddressPool', createObject('addressPrefixes', createArray(parameters('vpnClientAddressPool'))), 'vpnClientProtocols', createArray('IkeV2', 'OpenVPN'), 'vpnAuthenticationTypes', createArray('Certificate', 'AAD'), 'aadTenant', format('{0}{1}/', environment().authentication.loginEndpoint, subscription().tenantId), 'aadAudience', '41b23e61-6c1e-4545-b367-cd1864d40ea', 'aadIssuer', format('https://sts.windows.net/{0}/', subscription().tenantId), 'vpnClientRootCertificates', createArray(createObject('name', 'RootCert', 'properties', createObject('publicCertData', parameters('vpnRootCertificate'))))), null())]"
+                "vpnClientConfiguration": "[if(not(equals(parameters('vpnRootCertificate'), '')), createObject('vpnClientAddressPool', createObject('addressPrefixes', createArray(parameters('vpnClientAddressPool'))), 'vpnClientProtocols', createArray('IkeV2', 'OpenVPN'), 'vpnAuthenticationTypes', createArray('Certificate', 'AAD'), 'aadTenant', format('{0}{1}/', environment().authentication.loginEndpoint, subscription().tenantId), 'aadAudience', '41b23e61-6c1e-4545-b367-cd1864d40eab', 'aadIssuer', format('https://sts.windows.net/{0}/', subscription().tenantId), 'vpnClientRootCertificates', createArray(createObject('name', 'RootCert', 'properties', createObject('publicCertData', parameters('vpnRootCertificate'))))), null())]"
               },
               "dependsOn": [
                 "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpVpnName'))]",
