@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Countries - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-globe me-2"></i>Countries</h1>
+    <a href="{{ url_for('admin.create_country') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i>Add New
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        {% if countries %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>States</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for country in countries %}
+                    <tr>
+                        <td>{{ country.id }}</td>
+                        <td>{{ country.country_name }}</td>
+                        <td>{{ country.states.count() }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No countries defined yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}My Job Postings - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="bi bi-briefcase me-2"></i>My Job Postings
+    </h1>
+    <a href="{{ url_for('employer.create_job_posting') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i>Post New Job
+    </a>
+</div>
+
+{% if jobs.items %}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Location</th>
+                        <th>Job Type</th>
+                        <th>Posted</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in jobs.items %}
+                    <tr>
+                        <td>
+                            <strong>{{ job.title }}</strong>
+                            {% if job.department %}
+                                <br><small class="text-muted">{{ job.department }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ job.location }}</td>
+                        <td>{{ job.job_type.job_type_name if job.job_type else '-' }}</td>
+                        <td>{{ job.posted_date.strftime('%b %d, %Y') }}</td>
+                        <td>
+                            {% if job.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('employer.edit_job_posting', id=job.id) }}" 
+                                   class="btn btn-outline-primary" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form action="{{ url_for('employer.delete_job_posting', id=job.id) }}" 
+                                      method="POST" class="d-inline"
+                                      onsubmit="return confirm('Are you sure you want to delete this job posting?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if jobs.pages > 1 %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mb-0">
+                {% if jobs.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('employer.job_postings', page=jobs.prev_num) }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in jobs.iter_pages() %}
+                    {% if page_num %}
+                        <li class="page-item {{ 'active' if page_num == jobs.page else '' }}">
+                            <a class="page-link" href="{{ url_for('employer.job_postings', page=page_num) }}">{{ page_num }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if jobs.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('employer.job_postings', page=jobs.next_num) }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i>
+    You haven't posted any jobs yet. 
+    <a href="{{ url_for('employer.create_job_posting') }}">Create your first job posting</a>.
+</div>
+{% endif %}
+{% endblock %}

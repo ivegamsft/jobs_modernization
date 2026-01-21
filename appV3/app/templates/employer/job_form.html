@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Create' if is_new else 'Edit' }} Job Posting - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h1 class="mb-4">
+            <i class="bi bi-briefcase me-2"></i>{{ 'Create' if is_new else 'Edit' }} Job Posting
+        </h1>
+        
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <h5 class="mb-3">Job Details</h5>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.title.label.text }} <span class="text-danger">*</span></label>
+                        {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else "")) }}
+                        {% for error in form.title.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.description.label.text }} <span class="text-danger">*</span></label>
+                        {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows="6") }}
+                        {% for error in form.description.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                        <small class="text-muted">Include responsibilities, requirements, and benefits.</small>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.department.label.text }}</label>
+                            {{ form.department(class="form-control") }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.job_code.label.text }}</label>
+                            {{ form.job_code(class="form-control") }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.job_type_id.label.text }}</label>
+                            {{ form.job_type_id(class="form-select") }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.education_level_id.label.text }}</label>
+                            {{ form.education_level_id(class="form-select") }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.contact_person.label.text }}</label>
+                        {{ form.contact_person(class="form-control") }}
+                    </div>
+                    
+                    <hr class="my-4">
+                    <h5 class="mb-3">Location</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">{{ form.city.label.text }}</label>
+                            {{ form.city(class="form-control") }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">{{ form.state_id.label.text }}</label>
+                            {{ form.state_id(class="form-select") }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">{{ form.country_id.label.text }}</label>
+                            {{ form.country_id(class="form-select") }}
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    <h5 class="mb-3">Salary</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.min_salary.label.text }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                {{ form.min_salary(class="form-control") }}
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.max_salary.label.text }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                {{ form.max_salary(class="form-control") }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="mb-3 form-check">
+                        {{ form.is_active(class="form-check-input") }}
+                        <label class="form-check-label">{{ form.is_active.label.text }}</label>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-2"></i>{{ 'Create Job' if is_new else 'Save Changes' }}
+                        </button>
+                        <a href="{{ url_for('employer.job_postings') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

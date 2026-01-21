@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Saved Jobs - {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">
+    <i class="bi bi-heart me-2"></i>Saved Jobs
+</h1>
+
+{% if my_jobs.items %}
+<div class="row">
+    {% for my_job in my_jobs.items %}
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <h5 class="card-title">{{ my_job.job_posting.title }}</h5>
+                    <form action="{{ url_for('jobseeker.remove_favorite_job', id=my_job.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove">
+                            <i class="bi bi-heart-fill"></i>
+                        </button>
+                    </form>
+                </div>
+                <p class="text-muted mb-1">
+                    <i class="bi bi-building me-1"></i>{{ my_job.job_posting.company.company_name }}
+                </p>
+                <p class="text-muted mb-2">
+                    <i class="bi bi-geo-alt me-1"></i>{{ my_job.job_posting.location }}
+                </p>
+                {% if my_job.job_posting.job_type %}
+                <span class="badge bg-primary mb-2">{{ my_job.job_posting.job_type.job_type_name }}</span>
+                {% endif %}
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <small class="text-muted">
+                        Saved: {{ my_job.created_at.strftime('%b %d, %Y') }}
+                    </small>
+                    <a href="{{ url_for('jobseeker.view_job', id=my_job.job_posting.id) }}" class="btn btn-sm btn-outline-primary">
+                        View Job
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if my_jobs.pages > 1 %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if my_jobs.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('jobseeker.favorites', page=my_jobs.prev_num) }}">Previous</a>
+        </li>
+        {% endif %}
+        
+        {% for page_num in my_jobs.iter_pages() %}
+            {% if page_num %}
+                <li class="page-item {{ 'active' if page_num == my_jobs.page else '' }}">
+                    <a class="page-link" href="{{ url_for('jobseeker.favorites', page=page_num) }}">{{ page_num }}</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if my_jobs.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('jobseeker.favorites', page=my_jobs.next_num) }}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i>
+    You haven't saved any jobs yet. 
+    <a href="{{ url_for('jobseeker.job_search') }}">Search for jobs</a> and save the ones you're interested in.
+</div>
+{% endif %}
+{% endblock %}

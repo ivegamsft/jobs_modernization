@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Company Profile - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h1 class="mb-4">
+            <i class="bi bi-building me-2"></i>Company Profile
+        </h1>
+        
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <h5 class="mb-3">Company Information</h5>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.company_name.label.text }} <span class="text-danger">*</span></label>
+                        {{ form.company_name(class="form-control" + (" is-invalid" if form.company_name.errors else "")) }}
+                        {% for error in form.company_name.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.company_profile.label.text }}</label>
+                        {{ form.company_profile(class="form-control", rows="4") }}
+                        <small class="text-muted">Describe your company, culture, and what makes it a great place to work.</small>
+                    </div>
+                    
+                    <hr class="my-4">
+                    <h5 class="mb-3">Address</h5>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.address1.label.text }}</label>
+                        {{ form.address1(class="form-control") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.address2.label.text }}</label>
+                        {{ form.address2(class="form-control") }}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.city.label.text }}</label>
+                            {{ form.city(class="form-control") }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.postal_code.label.text }}</label>
+                            {{ form.postal_code(class="form-control") }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.country_id.label.text }}</label>
+                            {{ form.country_id(class="form-select") }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.state_id.label.text }}</label>
+                            {{ form.state_id(class="form-select") }}
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    <h5 class="mb-3">Contact Information</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.phone.label.text }}</label>
+                            {{ form.phone(class="form-control") }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.fax.label.text }}</label>
+                            {{ form.fax(class="form-control") }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.email.label.text }}</label>
+                            {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), type="email") }}
+                            {% for error in form.email.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.website_url.label.text }}</label>
+                            {{ form.website_url(class="form-control", placeholder="https://") }}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-2"></i>Save Profile
+                        </button>
+                        <a href="{{ url_for('employer.dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

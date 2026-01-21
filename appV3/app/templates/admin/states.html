@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}States - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-geo me-2"></i>States</h1>
+    <a href="{{ url_for('admin.create_state') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i>Add New
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        {% if states %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Country</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for state in states %}
+                    <tr>
+                        <td>{{ state.id }}</td>
+                        <td>{{ state.state_name }}</td>
+                        <td>{{ state.country.country_name if state.country else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No states defined yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+    </a>
+</div>
+{% endblock %}

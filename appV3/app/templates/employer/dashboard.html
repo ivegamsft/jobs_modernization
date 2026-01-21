@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Employer Dashboard - {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">
+    <i class="bi bi-speedometer2 me-2"></i>Employer Dashboard
+</h1>
+
+<div class="row mb-4">
+    <!-- Company Profile Card -->
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-building text-primary me-2"></i>Company Profile
+                </h5>
+                {% if company %}
+                    <h4>{{ company.company_name }}</h4>
+                    <p class="text-muted">{{ company.city }}{% if company.state %}, {{ company.state.state_name }}{% endif %}</p>
+                    <a href="{{ url_for('employer.company_profile') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil me-2"></i>Edit Profile
+                    </a>
+                {% else %}
+                    <p class="text-muted">You haven't set up your company profile yet.</p>
+                    <a href="{{ url_for('employer.company_profile') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-2"></i>Create Profile
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Job Postings Stats -->
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-briefcase text-primary me-2"></i>Job Postings
+                </h5>
+                <h2>{{ job_count }}</h2>
+                <p class="text-muted">Active job postings</p>
+                <a href="{{ url_for('employer.create_job_posting') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-lg me-2"></i>Post New Job
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Quick Actions</h5>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ url_for('employer.job_postings') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-list-ul me-2"></i>View All Jobs
+                    </a>
+                    <a href="{{ url_for('employer.resume_search') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-search me-2"></i>Search Resumes
+                    </a>
+                    <a href="{{ url_for('employer.favorites') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-heart me-2"></i>Favorite Resumes
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Job Postings -->
+{% if recent_jobs %}
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">
+            <i class="bi bi-clock-history me-2"></i>Recent Job Postings
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Location</th>
+                        <th>Posted</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in recent_jobs %}
+                    <tr>
+                        <td>{{ job.title }}</td>
+                        <td>{{ job.location }}</td>
+                        <td>{{ job.posted_date.strftime('%b %d, %Y') }}</td>
+                        <td>
+                            {% if job.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('employer.edit_job_posting', id=job.id) }}" 
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
