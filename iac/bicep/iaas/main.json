@@ -1,0 +1,731 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.39.26.7824",
+      "templateHash": "10989919690752181222"
+    }
+  },
+  "parameters": {
+    "environment": {
+      "type": "string",
+      "metadata": {
+        "description": "Environment name (dev, staging, prod)"
+      }
+    },
+    "applicationName": {
+      "type": "string",
+      "defaultValue": "jobsite",
+      "metadata": {
+        "description": "Application name (no spaces)"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Azure location for resources"
+      }
+    },
+    "vnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Virtual Network ID (from core deployment)"
+      }
+    },
+    "frontendSubnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Frontend Subnet ID (from core deployment)"
+      }
+    },
+    "dataSubnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Data Subnet ID (from core deployment)"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics Workspace ID (from core deployment)"
+      }
+    },
+    "vmssInstanceCount": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "VMSS instance count"
+      }
+    },
+    "sqlVmSize": {
+      "type": "string",
+      "defaultValue": "Standard_D2s_v5",
+      "metadata": {
+        "description": "SQL Server VM size"
+      }
+    },
+    "vmssVmSize": {
+      "type": "string",
+      "defaultValue": "Standard_D2s_v5",
+      "metadata": {
+        "description": "VMSS VM size"
+      }
+    },
+    "sqlAdminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "SQL Server Admin Username"
+      }
+    },
+    "sqlAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "SQL Server Admin Password"
+      }
+    },
+    "vmAdminUsername": {
+      "type": "string",
+      "defaultValue": "azureuser",
+      "metadata": {
+        "description": "Administrator username for VMs"
+      }
+    },
+    "vmAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Administrator password for VMs"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {
+        "environment": "[parameters('environment')]",
+        "application": "[parameters('applicationName')]",
+        "deployedDate": "[utcNow('u')]",
+        "deployedBy": "Bicep",
+        "component": "vm"
+      },
+      "metadata": {
+        "description": "Tags to apply to all resources"
+      }
+    }
+  },
+  "variables": {
+    "uniqueSuffix": "[uniqueString(resourceGroup().id)]",
+    "resourcePrefix": "[format('{0}-{1}', parameters('applicationName'), parameters('environment'))]",
+    "imagePublisher": "MicrosoftWindowsServer",
+    "imageOffer": "WindowsServer",
+    "imageSku": "2019-Datacenter",
+    "imageVersion": "latest",
+    "sqlImagePublisher": "MicrosoftSQLServer",
+    "sqlImageOffer": "SQL2019-WS2019",
+    "sqlImageSku": "Standard",
+    "vmssName": "[format('{0}-vmss-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
+    "sqlVmName": "[format('{0}-sql-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
+    "sqlVmNicName": "[format('{0}-nic', variables('sqlVmName'))]",
+    "sqlVmOsDiskName": "[format('{0}-osdisk', variables('sqlVmName'))]",
+    "sqlVmDataDiskName": "[format('{0}-datadisk', variables('sqlVmName'))]",
+    "appGatewayName": "[format('{0}-appgw-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
+    "appGatewayPublicIpName": "[format('{0}-appgw-pip-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
+    "appGatewaySubnetName": "snet-appgw",
+    "appGatewaySubnetPrefix": "10.50.224.0/27"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2023-11-01",
+      "name": "[format('{0}/{1}', split(parameters('vnetId'), '/')[8], variables('appGatewaySubnetName'))]",
+      "properties": {
+        "addressPrefix": "[variables('appGatewaySubnetPrefix')]",
+        "privateEndpointNetworkPolicies": "Disabled",
+        "privateLinkServiceNetworkPolicies": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "apiVersion": "2023-01-31",
+      "name": "[format('{0}-identity', variables('vmssName'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]"
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2023-11-01",
+      "name": "[format('{0}-nic', variables('vmssName'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "subnet": {
+                "id": "[parameters('frontendSubnetId')]"
+              },
+              "privateIPAllocationMethod": "Dynamic",
+              "primary": true
+            }
+          }
+        ],
+        "networkSecurityGroup": null
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachineScaleSets",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('vmssName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "[parameters('vmssVmSize')]",
+        "capacity": "[parameters('vmssInstanceCount')]"
+      },
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-identity', variables('vmssName'))))]": {}
+        }
+      },
+      "properties": {
+        "orchestrationMode": "Uniform",
+        "upgradePolicy": {
+          "mode": "Manual"
+        },
+        "virtualMachineProfile": {
+          "storageProfile": {
+            "imageReference": {
+              "publisher": "[variables('imagePublisher')]",
+              "offer": "[variables('imageOffer')]",
+              "sku": "[variables('imageSku')]",
+              "version": "[variables('imageVersion')]"
+            },
+            "osDisk": {
+              "createOption": "FromImage",
+              "managedDisk": {
+                "storageAccountType": "Premium_LRS"
+              }
+            }
+          },
+          "osProfile": {
+            "computerNamePrefix": "[format('{0}-vm', variables('resourcePrefix'))]",
+            "adminUsername": "[parameters('vmAdminUsername')]",
+            "adminPassword": "[parameters('vmAdminPassword')]",
+            "windowsConfiguration": {
+              "enableAutomaticUpdates": true,
+              "provisionVMAgent": true,
+              "timeZone": "UTC"
+            }
+          },
+          "networkProfile": {
+            "networkInterfaceConfigurations": [
+              {
+                "name": "nic-config-1",
+                "properties": {
+                  "primary": true,
+                  "ipConfigurations": [
+                    {
+                      "name": "ipconfig1",
+                      "properties": {
+                        "subnet": {
+                          "id": "[parameters('frontendSubnetId')]"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "extensionProfile": {
+            "extensions": [
+              {
+                "name": "IISInstall",
+                "properties": {
+                  "publisher": "Microsoft.Compute",
+                  "type": "CustomScriptExtension",
+                  "typeHandlerVersion": "1.10",
+                  "autoUpgradeMinorVersion": true,
+                  "settings": {
+                    "commandToExecute": "powershell -ExecutionPolicy Unrestricted -File c:\\iis-install.ps1",
+                    "fileUris": [
+                      "https://raw.githubusercontent.com/your-repo/scripts/iis-install.ps1"
+                    ]
+                  }
+                }
+              },
+              {
+                "name": "AzureMonitorAgent",
+                "properties": {
+                  "publisher": "Microsoft.Azure.Monitor",
+                  "type": "AzureMonitorWindowsAgent",
+                  "typeHandlerVersion": "1.0",
+                  "autoUpgradeMinorVersion": true,
+                  "settings": {
+                    "authentication": {
+                      "managedIdentity": {
+                        "client-id": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-identity', variables('vmssName'))), '2023-01-31').clientId]"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-identity', variables('vmssName')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "apiVersion": "2023-01-31",
+      "name": "[format('{0}-identity', variables('sqlVmName'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]"
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2023-11-01",
+      "name": "[variables('sqlVmNicName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "subnet": {
+                "id": "[parameters('dataSubnetId')]"
+              },
+              "privateIPAllocationMethod": "Dynamic",
+              "primary": true
+            }
+          }
+        ],
+        "enableAcceleratedNetworking": false
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('sqlVmName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-identity', variables('sqlVmName'))))]": {}
+        }
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('sqlVmSize')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('sqlImagePublisher')]",
+            "offer": "[variables('sqlImageOffer')]",
+            "sku": "[variables('sqlImageSku')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[variables('sqlVmOsDiskName')]",
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "Premium_LRS"
+            }
+          },
+          "dataDisks": [
+            {
+              "name": "[variables('sqlVmDataDiskName')]",
+              "lun": 0,
+              "createOption": "Empty",
+              "diskSizeGB": 128,
+              "managedDisk": {
+                "storageAccountType": "Premium_LRS"
+              }
+            }
+          ]
+        },
+        "osProfile": {
+          "computerName": "[variables('sqlVmName')]",
+          "adminUsername": "[parameters('sqlAdminUsername')]",
+          "adminPassword": "[parameters('sqlAdminPassword')]",
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "provisionVMAgent": true,
+            "timeZone": "UTC"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('sqlVmNicName'))]",
+              "properties": {
+                "primary": true
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-identity', variables('sqlVmName')))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('sqlVmNicName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.SqlVirtualMachine/sqlVirtualMachines",
+      "apiVersion": "2022-02-01",
+      "name": "[variables('sqlVmName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "virtualMachineResourceId": "[resourceId('Microsoft.Compute/virtualMachines', variables('sqlVmName'))]",
+        "sqlServerLicenseType": "PAYG",
+        "sqlManagement": "Full",
+        "sqlImageSku": "Standard",
+        "autoPatchingSettings": {
+          "enable": true,
+          "dayOfWeek": "Sunday",
+          "maintenanceWindowStartingHour": 2,
+          "maintenanceWindowDuration": 4
+        },
+        "autoBackupSettings": {
+          "enable": false
+        },
+        "keyVaultCredentialSettings": {
+          "enable": false
+        },
+        "serverConfigurationsManagementSettings": {
+          "sqlConnectivityUpdateSettings": {
+            "connectivityType": "Private",
+            "port": 1433
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', variables('sqlVmName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-11-01",
+      "name": "[variables('appGatewayPublicIpName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Static"
+      }
+    },
+    {
+      "type": "Microsoft.Network/applicationGateways",
+      "apiVersion": "2023-11-01",
+      "name": "[variables('appGatewayName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "sku": {
+          "name": "WAF_v2",
+          "tier": "WAF_v2",
+          "capacity": 2
+        },
+        "gatewayIPConfigurations": [
+          {
+            "name": "appGatewayIpConfig",
+            "properties": {
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', split(parameters('vnetId'), '/')[8], variables('appGatewaySubnetName'))]"
+              }
+            }
+          }
+        ],
+        "frontendIPConfigurations": [
+          {
+            "name": "appGatewayFrontendIP",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('appGatewayPublicIpName'))]"
+              }
+            }
+          }
+        ],
+        "frontendPorts": [
+          {
+            "name": "appGatewayFrontendPort",
+            "properties": {
+              "port": 443
+            }
+          },
+          {
+            "name": "appGatewayFrontendPortHttp",
+            "properties": {
+              "port": 80
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "appGatewayBackendPool",
+            "properties": {
+              "backendAddresses": []
+            }
+          }
+        ],
+        "backendHttpSettingsCollection": [
+          {
+            "name": "appGatewayBackendHttpSettings",
+            "properties": {
+              "port": 80,
+              "protocol": "Http",
+              "cookieBasedAffinity": "Disabled",
+              "pickHostNameFromBackendAddress": true,
+              "requestTimeout": 20,
+              "probe": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/probes', variables('appGatewayName'), 'appGatewayHealthProbe')]"
+              }
+            }
+          }
+        ],
+        "httpListeners": [
+          {
+            "name": "appGatewayHttpListener",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', variables('appGatewayName'), 'appGatewayFrontendIP')]"
+              },
+              "frontendPort": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/frontendPorts', variables('appGatewayName'), 'appGatewayFrontendPortHttp')]"
+              },
+              "protocol": "Http",
+              "requireServerNameIndication": false
+            }
+          },
+          {
+            "name": "appGatewayHttpsListener",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', variables('appGatewayName'), 'appGatewayFrontendIP')]"
+              },
+              "frontendPort": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/frontendPorts', variables('appGatewayName'), 'appGatewayFrontendPort')]"
+              },
+              "protocol": "Https",
+              "sslCertificate": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/sslCertificates', variables('appGatewayName'), 'appGatewaySslCert')]"
+              },
+              "requireServerNameIndication": false
+            }
+          }
+        ],
+        "requestRoutingRules": [
+          {
+            "name": "rule1",
+            "properties": {
+              "ruleType": "Basic",
+              "httpListener": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/httpListeners', variables('appGatewayName'), 'appGatewayHttpListener')]"
+              },
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('appGatewayName'), 'appGatewayBackendPool')]"
+              },
+              "backendHttpSettings": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('appGatewayName'), 'appGatewayBackendHttpSettings')]"
+              }
+            }
+          },
+          {
+            "name": "rule2",
+            "properties": {
+              "ruleType": "Basic",
+              "httpListener": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/httpListeners', variables('appGatewayName'), 'appGatewayHttpsListener')]"
+              },
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('appGatewayName'), 'appGatewayBackendPool')]"
+              },
+              "backendHttpSettings": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('appGatewayName'), 'appGatewayBackendHttpSettings')]"
+              }
+            }
+          }
+        ],
+        "probes": [
+          {
+            "name": "appGatewayHealthProbe",
+            "properties": {
+              "protocol": "Http",
+              "host": "localhost",
+              "path": "/",
+              "interval": 30,
+              "timeout": 10,
+              "unhealthyThreshold": 3,
+              "pickHostNameFromBackendHttpSettings": true
+            }
+          }
+        ],
+        "sslCertificates": [
+          {
+            "name": "appGatewaySslCert",
+            "properties": {
+              "data": "",
+              "password": ""
+            }
+          }
+        ],
+        "webApplicationFirewallConfiguration": {
+          "enabled": true,
+          "firewallMode": "Detection",
+          "ruleSetType": "OWASP",
+          "ruleSetVersion": "3.2",
+          "requestBodyCheck": true,
+          "maxRequestBodySize": 128,
+          "fileUploadLimitInMb": 100
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('appGatewayPublicIpName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', split(parameters('vnetId'), '/')[8], variables('appGatewaySubnetName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/autoscalesettings",
+      "apiVersion": "2021-05-01-preview",
+      "name": "[format('{0}-autoscale', variables('vmssName'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "enabled": false,
+        "targetResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', variables('vmssName'))]",
+        "profiles": [
+          {
+            "name": "Manual Scale",
+            "capacity": {
+              "minimum": "1",
+              "maximum": "10",
+              "default": "1"
+            },
+            "rules": []
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachineScaleSets', variables('vmssName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[format('Microsoft.Compute/virtualMachineScaleSets/{0}', variables('vmssName'))]",
+      "name": "send-to-analytics",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachineScaleSets', variables('vmssName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[format('Microsoft.Network/applicationGateways/{0}', variables('appGatewayName'))]",
+      "name": "send-to-analytics",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "logs": [
+          {
+            "category": "ApplicationGatewayAccessLog",
+            "enabled": true
+          },
+          {
+            "category": "ApplicationGatewayPerformanceLog",
+            "enabled": true
+          },
+          {
+            "category": "ApplicationGatewayFirewallLog",
+            "enabled": true
+          }
+        ],
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/applicationGateways', variables('appGatewayName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "vmssId": {
+      "type": "string",
+      "metadata": {
+        "description": "VMSS ID"
+      },
+      "value": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', variables('vmssName'))]"
+    },
+    "vmssName": {
+      "type": "string",
+      "metadata": {
+        "description": "VMSS Name"
+      },
+      "value": "[variables('vmssName')]"
+    },
+    "sqlVmId": {
+      "type": "string",
+      "metadata": {
+        "description": "SQL VM ID"
+      },
+      "value": "[resourceId('Microsoft.Compute/virtualMachines', variables('sqlVmName'))]"
+    },
+    "sqlVmName": {
+      "type": "string",
+      "metadata": {
+        "description": "SQL VM Name"
+      },
+      "value": "[variables('sqlVmName')]"
+    },
+    "sqlVmPrivateIp": {
+      "type": "string",
+      "metadata": {
+        "description": "SQL VM Private IP"
+      },
+      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', variables('sqlVmNicName')), '2023-11-01').ipConfigurations[0].properties.privateIPAddress]"
+    },
+    "appGatewayId": {
+      "type": "string",
+      "metadata": {
+        "description": "Application Gateway ID"
+      },
+      "value": "[resourceId('Microsoft.Network/applicationGateways', variables('appGatewayName'))]"
+    },
+    "appGatewayName": {
+      "type": "string",
+      "metadata": {
+        "description": "Application Gateway Name"
+      },
+      "value": "[variables('appGatewayName')]"
+    },
+    "appGatewayPublicIp": {
+      "type": "string",
+      "metadata": {
+        "description": "Application Gateway Public IP"
+      },
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('appGatewayPublicIpName')), '2023-11-01').ipAddress]"
+    }
+  }
+}

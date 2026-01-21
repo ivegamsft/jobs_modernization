@@ -1,0 +1,10 @@
+using './main.bicep'
+
+param environment = 'dev'
+param applicationName = 'jobsite'
+param location = 'eastus'
+param vnetAddressPrefix = '10.50.0.0/16'
+param sqlAdminUsername = 'jobsiteadmin'
+param sqlAdminPassword = 'ChangeMe@123456'
+param vpnRootCertificate = 'REPLACE_WITH_BASE64_VPN_ROOT_CERT'
+param vpnClientAddressPool = '10.70.0.0/24'
