@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.39.26.7824",
-      "templateHash": "11551591201329234070"
+      "templateHash": "48152968387437781"
     }
   },
   "parameters": {
@@ -24,10 +24,6 @@
     "dataSubnetId": {
       "type": "string"
     },
-    "gatewaySubnetId": {
-      "type": "string",
-      "defaultValue": ""
-    },
     "adminUsername": {
       "type": "string"
     },
@@ -44,14 +40,6 @@
     "adminPassword": {
       "type": "securestring"
     },
-    "appGatewayCertData": {
-      "type": "securestring",
-      "defaultValue": ""
-    },
-    "appGatewayCertPassword": {
-      "type": "securestring",
-      "defaultValue": ""
-    },
     "tags": {
       "type": "object"
     }
@@ -61,9 +49,6 @@
     "resourcePrefix": "[format('{0}-{1}', parameters('applicationName'), parameters('environment'))]",
     "wfeVmName": "[format('{0}-wfe-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
     "sqlVmName": "[format('{0}-sqlvm-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
-    "deployAppGateway": "[not(equals(parameters('gatewaySubnetId'), ''))]",
-    "appGatewayName": "[format('{0}-appgw-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
-    "publicIpAppGwName": "[format('{0}-pip-appgw-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
     "nsgFrontendName": "[format('{0}-nsg-frontend', variables('resourcePrefix'))]",
     "nsgDataName": "[format('{0}-nsg-data', variables('resourcePrefix'))]"
   },
@@ -108,7 +93,7 @@
               "protocol": "Tcp",
               "sourcePortRange": "*",
               "destinationPortRange": "3389",
-              "sourceAddressPrefix": "[parameters('allowedRdpIps')[0]]",
+              "sourceAddressPrefixes": "[parameters('allowedRdpIps')]",
               "destinationAddressPrefix": "*",
               "access": "Allow",
               "priority": 120,
@@ -184,7 +169,7 @@
               "protocol": "Tcp",
               "sourcePortRange": "*",
               "destinationPortRange": "3389",
-              "sourceAddressPrefix": "[parameters('allowedRdpIps')[0]]",
+              "sourceAddressPrefixes": "[parameters('allowedRdpIps')]",
               "destinationAddressPrefix": "*",
               "access": "Allow",
               "priority": 110,
@@ -221,19 +206,6 @@
       }
     },
     {
-      "type": "Microsoft.Network/publicIPAddresses",
-      "apiVersion": "2023-11-01",
-      "name": "[variables('publicIpAppGwName')]",
-      "location": "[parameters('location')]",
-      "tags": "[parameters('tags')]",
-      "sku": {
-        "name": "Standard"
-      },
-      "properties": {
-        "publicIPAllocationMethod": "Static"
-      }
-    },
-    {
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2023-11-01",
       "name": "[format('{0}-nic', variables('wfeVmName'))]",
@@ -256,13 +228,12 @@
         ]
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Network/applicationGateways', variables('appGatewayName'))]",
         "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgFrontendName'))]"
       ]
     },
     {
       "type": "Microsoft.Compute/virtualMachines",
-      "apiVersion": "2023-09-01",
+      "apiVersion": "2023-07-01",
       "name": "[variables('wfeVmName')]",
       "location": "[parameters('location')]",
       "tags": "[parameters('tags')]",
@@ -271,7 +242,7 @@
           "vmSize": "[parameters('vmSize')]"
         },
         "osProfile": {
-          "computerName": "[take(format('{0}-wfe', variables('resourcePrefix')), 15)]",
+          "computerName": "[variables('wfeVmName')]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]",
           "windowsConfiguration": {
@@ -280,18 +251,17 @@
           }
         },
         "storageProfile": {
-          "osDisk": {
-            "createOption": "FromImage",
-            "caching": "ReadWrite",
-            "managedDisk": {
-              "storageAccountType": "Premium_LRS"
-            }
-          },
           "imageReference": {
             "publisher": "MicrosoftWindowsServer",
             "offer": "WindowsServer",
             "sku": "2022-datacenter-azure-edition",
             "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "Premium_LRS"
+            }
           }
         },
         "networkProfile": {
@@ -303,7 +273,6 @@
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Network/applicationGateways', variables('appGatewayName'))]",
         "[resourceId('Microsoft.Network/networkInterfaces', format('{0}-nic', variables('wfeVmName')))]"
       ]
     },
@@ -335,7 +304,7 @@
     },
     {
       "type": "Microsoft.Compute/virtualMachines",
-      "apiVersion": "2023-09-01",
+      "apiVersion": "2023-07-01",
       "name": "[variables('sqlVmName')]",
       "location": "[parameters('location')]",
       "tags": "[parameters('tags')]",
@@ -344,7 +313,7 @@
           "vmSize": "[parameters('sqlVmSize')]"
         },
         "osProfile": {
-          "computerName": "[take(format('{0}-sql', variables('resourcePrefix')), 15)]",
+          "computerName": "[variables('sqlVmName')]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]",
           "windowsConfiguration": {
@@ -353,34 +322,31 @@
           }
         },
         "storageProfile": {
+          "imageReference": {
+            "publisher": "MicrosoftSQLServer",
+            "offer": "sql2022-ws2022",
+            "sku": "standard",
+            "version": "latest"
+          },
           "osDisk": {
             "createOption": "FromImage",
-            "caching": "ReadWrite",
             "managedDisk": {
               "storageAccountType": "Premium_LRS"
             }
           },
-          "imageReference": {
-            "publisher": "MicrosoftSQLServer",
-            "offer": "sql2022-ws2022",
-            "sku": "standard-gen2",
-            "version": "latest"
-          },
           "dataDisks": [
             {
-              "createOption": "Empty",
               "lun": 0,
+              "createOption": "Empty",
               "diskSizeGB": 128,
-              "caching": "ReadOnly",
               "managedDisk": {
                 "storageAccountType": "Premium_LRS"
               }
             },
             {
-              "createOption": "Empty",
               "lun": 1,
+              "createOption": "Empty",
               "diskSizeGB": 128,
-              "caching": "None",
               "managedDisk": {
                 "storageAccountType": "Premium_LRS"
               }
@@ -401,129 +367,27 @@
     },
     {
       "type": "Microsoft.SqlVirtualMachine/sqlVirtualMachines",
-      "apiVersion": "2023-10-01",
-      "name": "[variables('sqlVmName')]",
+      "apiVersion": "2023-10-01-preview",
+      "name": "[format('{0}-sqlvm-config', variables('sqlVmName'))]",
       "location": "[parameters('location')]",
       "tags": "[parameters('tags')]",
       "properties": {
         "virtualMachineResourceId": "[resourceId('Microsoft.Compute/virtualMachines', variables('sqlVmName'))]",
         "sqlManagement": "Full",
-        "sqlServerLicenseType": "PAYG",
-        "storageConfigurationSettings": {
-          "diskConfigurationType": "NEW",
-          "storageWorkloadType": "GENERAL",
-          "sqlDataSettings": {
-            "luns": [
-              0
-            ],
-            "defaultFilePath": "F:\\Data"
-          },
-          "sqlLogSettings": {
-            "luns": [
-              1
-            ],
-            "defaultFilePath": "G:\\Log"
-          }
+        "sqlServerLicenseType": "AHUB",
+        "wsfcStaticIp": "",
+        "autoBackupSettings": {
+          "enable": false
         },
         "serverConfigurationsManagementSettings": {
           "sqlConnectivityUpdateSettings": {
-            "connectivityType": "PRIVATE",
+            "connectivityType": "Private",
             "port": 1433
           }
         }
       },
       "dependsOn": [
         "[resourceId('Microsoft.Compute/virtualMachines', variables('sqlVmName'))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Network/applicationGateways",
-      "apiVersion": "2023-11-01",
-      "name": "[variables('appGatewayName')]",
-      "location": "[parameters('location')]",
-      "tags": "[parameters('tags')]",
-      "properties": {
-        "sku": {
-          "name": "Standard_v2",
-          "tier": "Standard_v2",
-          "capacity": 2
-        },
-        "gatewayIPConfigurations": [
-          {
-            "name": "appGatewayIpConfig",
-            "properties": {
-              "subnet": {
-                "id": "[if(not(equals(parameters('gatewaySubnetId'), '')), parameters('gatewaySubnetId'), parameters('dataSubnetId'))]"
-              }
-            }
-          }
-        ],
-        "frontendIPConfigurations": [
-          {
-            "name": "appGatewayFrontendIP",
-            "properties": {
-              "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAppGwName'))]"
-              }
-            }
-          }
-        ],
-        "frontendPorts": [
-          {
-            "name": "port_443",
-            "properties": {
-              "port": 443
-            }
-          },
-          {
-            "name": "port_80",
-            "properties": {
-              "port": 80
-            }
-          }
-        ],
-        "sslCertificates": "[if(not(equals(parameters('appGatewayCertData'), '')), createArray(createObject('name', 'appGatewaySslCert', 'properties', createObject('data', parameters('appGatewayCertData'), 'password', parameters('appGatewayCertPassword')))), createArray())]",
-        "backendAddressPools": [
-          {
-            "name": "wfe-backend-pool",
-            "properties": {
-              "backendAddresses": []
-            }
-          }
-        ],
-        "backendHttpSettingsCollection": [
-          {
-            "name": "appGatewayBackendHttpSettings",
-            "properties": {
-              "port": 80,
-              "protocol": "Http",
-              "cookieBasedAffinity": "Disabled",
-              "pickHostNameFromBackendAddress": true,
-              "probe": {
-                "id": "[resourceId('Microsoft.Network/applicationGateways/probes', variables('appGatewayName'), 'health-probe')]"
-              }
-            }
-          }
-        ],
-        "httpListeners": "[concat(if(not(equals(parameters('appGatewayCertData'), '')), createArray(createObject('name', 'appGatewayHttpsListener', 'properties', createObject('frontendIPConfiguration', createObject('id', resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', variables('appGatewayName'), 'appGatewayFrontendIP')), 'frontendPort', createObject('id', resourceId('Microsoft.Network/applicationGateways/frontendPorts', variables('appGatewayName'), 'port_443')), 'protocol', 'Https', 'sslCertificate', createObject('id', resourceId('Microsoft.Network/applicationGateways/sslCertificates', variables('appGatewayName'), 'appGatewaySslCert'))))), createArray()), createArray(createObject('name', 'appGatewayHttpListener', 'properties', createObject('frontendIPConfiguration', createObject('id', resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', variables('appGatewayName'), 'appGatewayFrontendIP')), 'frontendPort', createObject('id', resourceId('Microsoft.Network/applicationGateways/frontendPorts', variables('appGatewayName'), 'port_80')), 'protocol', 'Http'))))]",
-        "requestRoutingRules": "[concat(if(not(equals(parameters('appGatewayCertData'), '')), createArray(createObject('name', 'httpsRoutingRule', 'properties', createObject('ruleType', 'Basic', 'priority', 100, 'httpListener', createObject('id', resourceId('Microsoft.Network/applicationGateways/httpListeners', variables('appGatewayName'), 'appGatewayHttpsListener')), 'backendAddressPool', createObject('id', resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('appGatewayName'), 'wfe-backend-pool')), 'backendHttpSettings', createObject('id', resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('appGatewayName'), 'appGatewayBackendHttpSettings'))))), createArray()), createArray(createObject('name', if(not(equals(parameters('appGatewayCertData'), '')), 'httpToHttpsRedirect', 'httpRoutingRule'), 'properties', createObject('ruleType', 'Basic', 'priority', 200, 'httpListener', createObject('id', resourceId('Microsoft.Network/applicationGateways/httpListeners', variables('appGatewayName'), 'appGatewayHttpListener')), 'redirectConfiguration', if(not(equals(parameters('appGatewayCertData'), '')), createObject('id', resourceId('Microsoft.Network/applicationGateways/redirectConfigurations', variables('appGatewayName'), 'httpToHttpsRedirect')), null()), 'backendAddressPool', if(equals(parameters('appGatewayCertData'), ''), createObject('id', resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('appGatewayName'), 'wfe-backend-pool')), null()), 'backendHttpSettings', if(equals(parameters('appGatewayCertData'), ''), createObject('id', resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('appGatewayName'), 'appGatewayBackendHttpSettings')), null())))))]",
-        "redirectConfigurations": "[if(not(equals(parameters('appGatewayCertData'), '')), createArray(createObject('name', 'httpToHttpsRedirect', 'properties', createObject('redirectType', 'Permanent', 'targetListener', createObject('id', resourceId('Microsoft.Network/applicationGateways/httpListeners', variables('appGatewayName'), 'appGatewayHttpsListener')), 'includePath', true(), 'includeQueryString', true()))), createArray())]",
-        "probes": [
-          {
-            "name": "health-probe",
-            "properties": {
-              "protocol": "Http",
-              "path": "/",
-              "interval": 30,
-              "timeout": 30,
-              "unhealthyThreshold": 3,
-              "pickHostNameFromBackendHttpSettings": true
-            }
-          }
-        ]
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAppGwName'))]"
       ]
     }
   ],
@@ -551,18 +415,6 @@
     "sqlVmPrivateIp": {
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Network/networkInterfaces', format('{0}-nic', variables('sqlVmName'))), '2023-11-01').ipConfigurations[0].properties.privateIPAddress]"
-    },
-    "appGatewayId": {
-      "type": "string",
-      "value": "[if(variables('deployAppGateway'), resourceId('Microsoft.Network/applicationGateways', variables('appGatewayName')), '')]"
-    },
-    "appGatewayName": {
-      "type": "string",
-      "value": "[if(variables('deployAppGateway'), variables('appGatewayName'), '')]"
-    },
-    "appGatewayPublicIp": {
-      "type": "string",
-      "value": "[if(variables('deployAppGateway'), reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpAppGwName')), '2023-11-01').ipAddress, '')]"
     }
   }
 }

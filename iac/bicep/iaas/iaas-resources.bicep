@@ -9,30 +9,25 @@ param applicationName string
 param location string
 param frontendSubnetId string
 param dataSubnetId string
-param gatewaySubnetId string = ''
 param adminUsername string
 param vmSize string
 param sqlVmSize string
 param allowedRdpIps array = []
 @secure()
 param adminPassword string
-@secure()
-param appGatewayCertData string = ''
-@secure()
-param appGatewayCertPassword string = ''
 param tags object
 
 // Variables
 var uniqueSuffix = uniqueString(resourceGroup().id)
 var resourcePrefix = '${applicationName}-${environment}'
-
 var wfeVmName = '${resourcePrefix}-wfe-${uniqueSuffix}'
 var sqlVmName = '${resourcePrefix}-sqlvm-${uniqueSuffix}'
-var deployAppGateway = gatewaySubnetId != ''
-var appGatewayName = '${resourcePrefix}-appgw-${uniqueSuffix}'
-var publicIpAppGwName = '${resourcePrefix}-pip-appgw-${uniqueSuffix}'
 var nsgFrontendName = '${resourcePrefix}-nsg-frontend'
 var nsgDataName = '${resourcePrefix}-nsg-data'
+
+// ============================================================================
+// NETWORK SECURITY GROUPS
+// ============================================================================
 
 // NSG for Frontend Subnet (Web VM)
 resource nsgFrontend 'Microsoft.Network/networkSecurityGroups@2023-11-01' = {
@@ -69,21 +64,21 @@ resource nsgFrontend 'Microsoft.Network/networkSecurityGroups@2023-11-01' = {
           direction: 'Inbound'
         }
       }
-      // Allow RDP for admin access (from allowed IPs)
+      // Allow RDP from allowed IPs
       {
         name: 'AllowRDPFromAllowedIps'
         properties: {
           protocol: 'Tcp'
           sourcePortRange: '*'
           destinationPortRange: '3389'
-          sourceAddressPrefix: allowedRdpIps[0]
+          sourceAddressPrefixes: allowedRdpIps
           destinationAddressPrefix: '*'
           access: 'Allow'
           priority: 120
           direction: 'Inbound'
         }
       }
-      // Allow WinRM (PowerShell automation) for .NET tools
+      // Allow WinRM HTTP (5985) from VirtualNetwork
       {
         name: 'AllowWinRMHTTP'
         properties: {
@@ -97,6 +92,7 @@ resource nsgFrontend 'Microsoft.Network/networkSecurityGroups@2023-11-01' = {
           direction: 'Inbound'
         }
       }
+      // Allow WinRM HTTPS (5986) from VirtualNetwork
       {
         name: 'AllowWinRMHTTPS'
         properties: {
@@ -149,21 +145,21 @@ resource nsgData 'Microsoft.Network/networkSecurityGroups@2023-11-01' = {
           direction: 'Inbound'
         }
       }
-      // Allow RDP for admin access (from allowed IPs)
+      // Allow RDP from allowed IPs
       {
         name: 'AllowRDPFromAllowedIps'
         properties: {
           protocol: 'Tcp'
           sourcePortRange: '*'
           destinationPortRange: '3389'
-          sourceAddressPrefix: allowedRdpIps[0]
+          sourceAddressPrefixes: allowedRdpIps
           destinationAddressPrefix: '*'
           access: 'Allow'
           priority: 110
           direction: 'Inbound'
         }
       }
-      // Allow WinRM (PowerShell automation) for .NET tools
+      // Allow WinRM HTTP (5985) from VirtualNetwork
       {
         name: 'AllowWinRMHTTP'
         properties: {
@@ -177,6 +173,7 @@ resource nsgData 'Microsoft.Network/networkSecurityGroups@2023-11-01' = {
           direction: 'Inbound'
         }
       }
+      // Allow WinRM HTTPS (5986) from VirtualNetwork
       {
         name: 'AllowWinRMHTTPS'
         properties: {
@@ -194,20 +191,10 @@ resource nsgData 'Microsoft.Network/networkSecurityGroups@2023-11-01' = {
   }
 }
 
-// Public IP for Application Gateway
-resource publicIpAppGw 'Microsoft.Network/publicIPAddresses@2023-11-01' = {
-  name: publicIpAppGwName
-  location: location
-  tags: tags
-  sku: {
-    name: 'Standard'
-  }
-  properties: {
-    publicIPAllocationMethod: 'Static'
-  }
-}
+// ============================================================================
+// WEB FRONTEND VM (WFE)
+// ============================================================================
 
-// WFE VM (Web Front End - talks to SQL)
 resource wfeNic 'Microsoft.Network/networkInterfaces@2023-11-01' = {
   name: '${wfeVmName}-nic'
   location: location
@@ -228,10 +215,9 @@ resource wfeNic 'Microsoft.Network/networkInterfaces@2023-11-01' = {
       }
     ]
   }
-  dependsOn: deployAppGateway ? [appGateway] : []
 }
 
-resource wfeVm 'Microsoft.Compute/virtualMachines@2023-09-01' = {
+resource wfeVm 'Microsoft.Compute/virtualMachines@2023-07-01' = {
   name: wfeVmName
   location: location
   tags: tags
@@ -240,7 +226,7 @@ resource wfeVm 'Microsoft.Compute/virtualMachines@2023-09-01' = {
       vmSize: vmSize
     }
     osProfile: {
-      computerName: take('${resourcePrefix}-wfe', 15)
+      computerName: wfeVmName
       adminUsername: adminUsername
       adminPassword: adminPassword
       windowsConfiguration: {
@@ -249,18 +235,17 @@ resource wfeVm 'Microsoft.Compute/virtualMachines@2023-09-01' = {
       }
     }
     storageProfile: {
-      osDisk: {
-        createOption: 'FromImage'
-        caching: 'ReadWrite'
-        managedDisk: {
-          storageAccountType: 'Premium_LRS'
-        }
-      }
       imageReference: {
         publisher: 'MicrosoftWindowsServer'
         offer: 'WindowsServer'
         sku: '2022-datacenter-azure-edition'
         version: 'latest'
+      }
+      osDisk: {
+        createOption: 'FromImage'
+        managedDisk: {
+          storageAccountType: 'Premium_LRS'
+        }
       }
     }
     networkProfile: {
@@ -271,12 +256,12 @@ resource wfeVm 'Microsoft.Compute/virtualMachines@2023-09-01' = {
       ]
     }
   }
-  dependsOn: [
-    appGateway
-  ]
 }
 
-// SQL VM (Data Tier)
+// ============================================================================
+// SQL SERVER VM
+// ============================================================================
+
 resource sqlVmNic 'Microsoft.Network/networkInterfaces@2023-11-01' = {
   name: '${sqlVmName}-nic'
   location: location
@@ -299,7 +284,7 @@ resource sqlVmNic 'Microsoft.Network/networkInterfaces@2023-11-01' = {
   }
 }
 
-resource sqlVm 'Microsoft.Compute/virtualMachines@2023-09-01' = {
+resource sqlVm 'Microsoft.Compute/virtualMachines@2023-07-01' = {
   name: sqlVmName
   location: location
   tags: tags
@@ -308,7 +293,7 @@ resource sqlVm 'Microsoft.Compute/virtualMachines@2023-09-01' = {
       vmSize: sqlVmSize
     }
     osProfile: {
-      computerName: take('${resourcePrefix}-sql', 15)
+      computerName: sqlVmName
       adminUsername: adminUsername
       adminPassword: adminPassword
       windowsConfiguration: {
@@ -317,34 +302,31 @@ resource sqlVm 'Microsoft.Compute/virtualMachines@2023-09-01' = {
       }
     }
     storageProfile: {
+      imageReference: {
+        publisher: 'MicrosoftSQLServer'
+        offer: 'sql2022-ws2022'
+        sku: 'standard'
+        version: 'latest'
+      }
       osDisk: {
         createOption: 'FromImage'
-        caching: 'ReadWrite'
         managedDisk: {
           storageAccountType: 'Premium_LRS'
         }
       }
-      imageReference: {
-        publisher: 'MicrosoftSQLServer'
-        offer: 'sql2022-ws2022'
-        sku: 'standard-gen2'
-        version: 'latest'
-      }
       dataDisks: [
         {
-          createOption: 'Empty'
           lun: 0
+          createOption: 'Empty'
           diskSizeGB: 128
-          caching: 'ReadOnly'
           managedDisk: {
             storageAccountType: 'Premium_LRS'
           }
         }
         {
-          createOption: 'Empty'
           lun: 1
+          createOption: 'Empty'
           diskSizeGB: 128
-          caching: 'None'
           managedDisk: {
             storageAccountType: 'Premium_LRS'
           }
@@ -361,280 +343,36 @@ resource sqlVm 'Microsoft.Compute/virtualMachines@2023-09-01' = {
   }
 }
 
-// SQL VM Extension
-resource sqlVmExtension 'Microsoft.SqlVirtualMachine/sqlVirtualMachines@2023-10-01' = {
-  name: sqlVmName
+// SQL VM Extension for SQL Server management
+resource sqlVmExtension 'Microsoft.SqlVirtualMachine/sqlVirtualMachines@2023-10-01-preview' = {
+  name: '${sqlVmName}-sqlvm-config'
   location: location
   tags: tags
   properties: {
     virtualMachineResourceId: sqlVm.id
     sqlManagement: 'Full'
-    sqlServerLicenseType: 'PAYG'
-    storageConfigurationSettings: {
-      diskConfigurationType: 'NEW'
-      storageWorkloadType: 'GENERAL'
-      sqlDataSettings: {
-        luns: [0]
-        defaultFilePath: 'F:\\Data'
-      }
-      sqlLogSettings: {
-        luns: [1]
-        defaultFilePath: 'G:\\Log'
-      }
+    sqlServerLicenseType: 'AHUB'
+    wsfcStaticIp: ''
+    autoBackupSettings: {
+      enable: false
     }
     serverConfigurationsManagementSettings: {
       sqlConnectivityUpdateSettings: {
-        connectivityType: 'PRIVATE'
+        connectivityType: 'Private'
         port: 1433
       }
     }
   }
 }
 
-// Application Gateway
-resource appGateway 'Microsoft.Network/applicationGateways@2023-11-01' = {
-  name: appGatewayName
-  location: location
-  tags: tags
-  properties: {
-    sku: {
-      name: 'Standard_v2'
-      tier: 'Standard_v2'
-      capacity: 2
-    }
-    gatewayIPConfigurations: [
-      {
-        name: 'appGatewayIpConfig'
-        properties: {
-          subnet: {
-            id: gatewaySubnetId != '' ? gatewaySubnetId : dataSubnetId
-          }
-        }
-      }
-    ]
-    frontendIPConfigurations: [
-      {
-        name: 'appGatewayFrontendIP'
-        properties: {
-          publicIPAddress: {
-            id: publicIpAppGw.id
-          }
-        }
-      }
-    ]
-    frontendPorts: [
-      {
-        name: 'port_443'
-        properties: {
-          port: 443
-        }
-      }
-      {
-        name: 'port_80'
-        properties: {
-          port: 80
-        }
-      }
-    ]
-    sslCertificates: appGatewayCertData != ''
-      ? [
-          {
-            name: 'appGatewaySslCert'
-            properties: {
-              data: appGatewayCertData
-              password: appGatewayCertPassword
-            }
-          }
-        ]
-      : []
-    backendAddressPools: [
-      {
-        name: 'wfe-backend-pool'
-        properties: {
-          backendAddresses: []
-        }
-      }
-    ]
-    backendHttpSettingsCollection: [
-      {
-        name: 'appGatewayBackendHttpSettings'
-        properties: {
-          port: 80
-          protocol: 'Http'
-          cookieBasedAffinity: 'Disabled'
-          pickHostNameFromBackendAddress: true
-          probe: {
-            id: resourceId('Microsoft.Network/applicationGateways/probes', appGatewayName, 'health-probe')
-          }
-        }
-      }
-    ]
-    httpListeners: concat(
-      appGatewayCertData != ''
-        ? [
-            {
-              name: 'appGatewayHttpsListener'
-              properties: {
-                frontendIPConfiguration: {
-                  id: resourceId(
-                    'Microsoft.Network/applicationGateways/frontendIPConfigurations',
-                    appGatewayName,
-                    'appGatewayFrontendIP'
-                  )
-                }
-                frontendPort: {
-                  id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', appGatewayName, 'port_443')
-                }
-                protocol: 'Https'
-                sslCertificate: {
-                  id: resourceId(
-                    'Microsoft.Network/applicationGateways/sslCertificates',
-                    appGatewayName,
-                    'appGatewaySslCert'
-                  )
-                }
-              }
-            }
-          ]
-        : [],
-      [
-        {
-          name: 'appGatewayHttpListener'
-          properties: {
-            frontendIPConfiguration: {
-              id: resourceId(
-                'Microsoft.Network/applicationGateways/frontendIPConfigurations',
-                appGatewayName,
-                'appGatewayFrontendIP'
-              )
-            }
-            frontendPort: {
-              id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', appGatewayName, 'port_80')
-            }
-            protocol: 'Http'
-          }
-        }
-      ]
-    )
-    requestRoutingRules: concat(
-      appGatewayCertData != ''
-        ? [
-            {
-              name: 'httpsRoutingRule'
-              properties: {
-                ruleType: 'Basic'
-                priority: 100
-                httpListener: {
-                  id: resourceId(
-                    'Microsoft.Network/applicationGateways/httpListeners',
-                    appGatewayName,
-                    'appGatewayHttpsListener'
-                  )
-                }
-                backendAddressPool: {
-                  id: resourceId(
-                    'Microsoft.Network/applicationGateways/backendAddressPools',
-                    appGatewayName,
-                    'wfe-backend-pool'
-                  )
-                }
-                backendHttpSettings: {
-                  id: resourceId(
-                    'Microsoft.Network/applicationGateways/backendHttpSettingsCollection',
-                    appGatewayName,
-                    'appGatewayBackendHttpSettings'
-                  )
-                }
-              }
-            }
-          ]
-        : [],
-      [
-        {
-          name: appGatewayCertData != '' ? 'httpToHttpsRedirect' : 'httpRoutingRule'
-          properties: {
-            ruleType: 'Basic'
-            priority: 200
-            httpListener: {
-              id: resourceId(
-                'Microsoft.Network/applicationGateways/httpListeners',
-                appGatewayName,
-                'appGatewayHttpListener'
-              )
-            }
-            redirectConfiguration: appGatewayCertData != ''
-              ? {
-                  id: resourceId(
-                    'Microsoft.Network/applicationGateways/redirectConfigurations',
-                    appGatewayName,
-                    'httpToHttpsRedirect'
-                  )
-                }
-              : null
-            backendAddressPool: appGatewayCertData == ''
-              ? {
-                  id: resourceId(
-                    'Microsoft.Network/applicationGateways/backendAddressPools',
-                    appGatewayName,
-                    'wfe-backend-pool'
-                  )
-                }
-              : null
-            backendHttpSettings: appGatewayCertData == ''
-              ? {
-                  id: resourceId(
-                    'Microsoft.Network/applicationGateways/backendHttpSettingsCollection',
-                    appGatewayName,
-                    'appGatewayBackendHttpSettings'
-                  )
-                }
-              : null
-          }
-        }
-      ]
-    )
-    redirectConfigurations: appGatewayCertData != ''
-      ? [
-          {
-            name: 'httpToHttpsRedirect'
-            properties: {
-              redirectType: 'Permanent'
-              targetListener: {
-                id: resourceId(
-                  'Microsoft.Network/applicationGateways/httpListeners',
-                  appGatewayName,
-                  'appGatewayHttpsListener'
-                )
-              }
-              includePath: true
-              includeQueryString: true
-            }
-          }
-        ]
-      : []
-    probes: [
-      {
-        name: 'health-probe'
-        properties: {
-          protocol: 'Http'
-          path: '/'
-          interval: 30
-          timeout: 30
-          unhealthyThreshold: 3
-          pickHostNameFromBackendHttpSettings: true
-        }
-      }
-    ]
-  }
-}
+// ============================================================================
+// OUTPUTS
+// ============================================================================
 
-// Outputs
 output wfeVmId string = wfeVm.id
 output wfeVmName string = wfeVm.name
 output wfeVmPrivateIp string = wfeNic.properties.ipConfigurations[0].properties.privateIPAddress
+
 output sqlVmId string = sqlVm.id
 output sqlVmName string = sqlVm.name
 output sqlVmPrivateIp string = sqlVmNic.properties.ipConfigurations[0].properties.privateIPAddress
-output appGatewayId string = deployAppGateway ? appGateway.id : ''
-output appGatewayName string = deployAppGateway ? appGateway.name : ''
-output appGatewayPublicIp string = deployAppGateway ? publicIpAppGw.properties.ipAddress : ''
