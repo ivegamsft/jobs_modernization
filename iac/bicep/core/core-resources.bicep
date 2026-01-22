@@ -58,7 +58,6 @@ var privateDnsZoneName = '${applicationName}.internal'
 var keyVaultName = 'kv-${environment}-${replace(location, ' ', '')}-${take(uniqueSuffix, 6)}'
 var logAnalyticsWorkspaceName = '${resourcePrefix}-la-${uniqueSuffix}'
 var acrName = '${applicationName}${environment}acr${uniqueSuffix}'
-var containerAppsEnvName = '${resourcePrefix}-cae-${uniqueSuffix}'
 
 // Log Analytics
 resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
@@ -329,6 +328,106 @@ resource acrPrivateEndpointDnsGroup 'Microsoft.Network/privateEndpoints/privateD
 // Note: Container Apps Environment moved to PaaS resource group
 // Core only provides the subnet (snet-ca) for PaaS to use
 
+// ============================================================================
+// SRE & Testing Infrastructure
+// ============================================================================
+
+// Azure Load Testing
+var loadTestingName = '${resourcePrefix}-loadtest-${uniqueSuffix}'
+
+resource loadTesting 'Microsoft.LoadTestService/loadTests@2022-12-01' = {
+  name: loadTestingName
+  location: location
+  tags: union(tags, { Purpose: 'SRE-LoadTesting' })
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    description: 'Load testing service for ${applicationName} with Playwright support'
+  }
+}
+
+// Load Testing Diagnostics
+resource loadTestingDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'diagnostics'
+  scope: loadTesting
+  properties: {
+    workspaceId: logAnalyticsWorkspace.id
+    logs: [
+      {
+        categoryGroup: 'allLogs'
+        enabled: true
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+      }
+    ]
+  }
+}
+
+// Load Testing RBAC - Grant Key Vault secrets access
+resource loadTestingKvRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(keyVault.id, loadTesting.id, 'kv-secrets-user')
+  scope: keyVault
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '4633458b-17de-408a-b874-0445c86b69e6'
+    ) // Key Vault Secrets User
+    principalId: loadTesting.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// Azure Chaos Studio - Chaos Experiments Workspace
+var chaosStudioName = '${resourcePrefix}-chaos-${uniqueSuffix}'
+
+// Note: Chaos Studio targets are configured at the resource level (VMs, AKS, etc.)
+// This creates the managed identity and RBAC for running experiments
+
+// Chaos Studio Managed Identity
+resource chaosIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: '${chaosStudioName}-identity'
+  location: location
+  tags: union(tags, { Purpose: 'SRE-ChaosEngineering' })
+}
+
+// Chaos Studio RBAC - Reader access to monitoring
+resource chaosMonitoringReaderRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(logAnalyticsWorkspace.id, chaosIdentity.id, 'monitoring-reader')
+  scope: logAnalyticsWorkspace
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '43d0d8ad-25c7-4714-9337-8ba259a9fe05'
+    ) // Monitoring Reader
+    principalId: chaosIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// Note: Subscription-level Contributor role for Chaos Studio must be assigned separately or via parent module
+
+// SRE Monitoring - Application Insights for SRE workflows
+var sreAppInsightsName = '${resourcePrefix}-sre-ai-${uniqueSuffix}'
+
+resource sreAppInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: sreAppInsightsName
+  location: location
+  tags: union(tags, { Purpose: 'SRE-Monitoring' })
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: logAnalyticsWorkspace.id
+    IngestionMode: 'LogAnalytics'
+    publicNetworkAccessForIngestion: 'Enabled'
+    publicNetworkAccessForQuery: 'Enabled'
+  }
+}
+
 // Outputs
 output vnetId string = vnet.id
 output vnetName string = vnet.name
@@ -363,3 +462,14 @@ output containerAppsSubnetId string = resourceId(
   vnet.name,
   subnetConfig.containerApps.name
 )
+output loadTestingId string = loadTesting.id
+output loadTestingName string = loadTesting.name
+output loadTestingIdentityPrincipalId string = loadTesting.identity.principalId
+output chaosIdentityId string = chaosIdentity.id
+output chaosIdentityName string = chaosIdentity.name
+output chaosIdentityPrincipalId string = chaosIdentity.properties.principalId
+output chaosIdentityClientId string = chaosIdentity.properties.clientId
+output sreAppInsightsId string = sreAppInsights.id
+output sreAppInsightsName string = sreAppInsights.name
+output sreAppInsightsInstrumentationKey string = sreAppInsights.properties.InstrumentationKey
+output sreAppInsightsConnectionString string = sreAppInsights.properties.ConnectionString
