@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.39.26.7824",
-      "templateHash": "6734048617719594480"
+      "templateHash": "18347139433640365309"
     }
   },
   "parameters": {
@@ -23,6 +23,10 @@
     },
     "dataSubnetId": {
       "type": "string"
+    },
+    "gatewaySubnetId": {
+      "type": "string",
+      "defaultValue": ""
     },
     "adminUsername": {
       "type": "string"
@@ -448,7 +452,7 @@
             "name": "appGatewayIpConfig",
             "properties": {
               "subnet": {
-                "id": "[parameters('dataSubnetId')]"
+                "id": "[if(not(equals(parameters('gatewaySubnetId'), '')), parameters('gatewaySubnetId'), parameters('dataSubnetId'))]"
               }
             }
           }

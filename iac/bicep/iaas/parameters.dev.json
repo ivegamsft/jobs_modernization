@@ -14,6 +14,9 @@
         "frontendSubnetId": {
             "value": "/subscriptions/844eabcc-dc96-453b-8d45-bef3d566f3f8/resourceGroups/jobsite-core-dev-rg/providers/Microsoft.Network/virtualNetworks/jobsite-dev-vnet-ubzfsgu4p5eli/subnets/snet-fe"
         },
+        "gatewaySubnetId": {
+            "value": "/subscriptions/844eabcc-dc96-453b-8d45-bef3d566f3f8/resourceGroups/jobsite-core-dev-rg/providers/Microsoft.Network/virtualNetworks/jobsite-dev-vnet-ubzfsgu4p5eli/subnets/GatewaySubnet"
+        },
         "dataSubnetId": {
             "value": "/subscriptions/844eabcc-dc96-453b-8d45-bef3d566f3f8/resourceGroups/jobsite-core-dev-rg/providers/Microsoft.Network/virtualNetworks/jobsite-dev-vnet-ubzfsgu4p5eli/subnets/snet-data"
         },

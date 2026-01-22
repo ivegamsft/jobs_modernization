@@ -9,6 +9,7 @@ param applicationName string
 param location string
 param frontendSubnetId string
 param dataSubnetId string
+param gatewaySubnetId string = ''
 param adminUsername string
 param vmSize string
 param sqlVmSize string
@@ -407,7 +408,7 @@ resource appGateway 'Microsoft.Network/applicationGateways@2023-11-01' = {
         name: 'appGatewayIpConfig'
         properties: {
           subnet: {
-            id: dataSubnetId
+            id: gatewaySubnetId != '' ? gatewaySubnetId : dataSubnetId
           }
         }
       }
