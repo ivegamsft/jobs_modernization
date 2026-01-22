@@ -13,9 +13,9 @@ param dataSubnetId string
 param adminUsername string = 'azureadmin'
 @secure()
 param adminPassword string = newGuid()
-param vmSize string = 'Standard_D2s_v4'
+param vmSize string = 'Standard_D2ds_v6'
 param vmssInstanceCount int = 2
-param sqlVmSize string = 'Standard_D4s_v4'
+param sqlVmSize string = 'Standard_D4ds_v6'
 @secure()
 param appGatewayCertData string
 @secure()
