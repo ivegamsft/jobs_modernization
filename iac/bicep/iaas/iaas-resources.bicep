@@ -26,7 +26,7 @@ param tags object
 var uniqueSuffix = uniqueString(resourceGroup().id)
 var resourcePrefix = '${applicationName}-${environment}'
 
-var vmssName = '${resourcePrefix}-vmss-${uniqueSuffix}'
+var wfeVmName = '${resourcePrefix}-wfe-${uniqueSuffix}'
 var sqlVmName = '${resourcePrefix}-sqlvm-${uniqueSuffix}'
 var appGatewayName = '${resourcePrefix}-appgw-${uniqueSuffix}'
 var publicIpAppGwName = '${resourcePrefix}-pip-appgw-${uniqueSuffix}'
@@ -44,77 +44,73 @@ resource publicIpAppGw 'Microsoft.Network/publicIPAddresses@2023-11-01' = {
   }
 }
 
-// VMSS (Web/App Tier)
-resource vmss 'Microsoft.Compute/virtualMachineScaleSets@2023-09-01' = {
-  name: vmssName
+// WFE VM (Web Front End - talks to SQL)
+resource wfeNic 'Microsoft.Network/networkInterfaces@2023-11-01' = {
+  name: '${wfeVmName}-nic'
   location: location
   tags: tags
-  sku: {
-    name: vmSize
-    tier: 'Standard'
-    capacity: vmssInstanceCount
-  }
   properties: {
-    orchestrationMode: 'Flexible'
-    platformFaultDomainCount: 1
-    upgradePolicy: {
-      mode: 'Manual'
-    }
-    virtualMachineProfile: {
-      osProfile: {
-        computerNamePrefix: 'vm'
-        adminUsername: adminUsername
-        adminPassword: adminPassword
-        windowsConfiguration: {
-          enableAutomaticUpdates: true
-          provisionVMAgent: true
-        }
-      }
-      storageProfile: {
-        osDisk: {
-          createOption: 'FromImage'
-          caching: 'ReadWrite'
-          managedDisk: {
-            storageAccountType: 'Premium_LRS'
+    ipConfigurations: [
+      {
+        name: 'ipconfig1'
+        properties: {
+          subnet: {
+            id: frontendSubnetId
           }
-        }
-        imageReference: {
-          publisher: 'MicrosoftWindowsServer'
-          offer: 'WindowsServer'
-          sku: '2022-datacenter-azure-edition'
-          version: 'latest'
-        }
-      }
-      networkProfile: {
-        networkApiVersion: '2023-05-01'
-        networkInterfaceConfigurations: [
-          {
-            name: 'vmss-nic'
-            properties: {
-              primary: true
-              ipConfigurations: [
-                {
-                  name: 'ipconfig1'
-                  properties: {
-                    subnet: {
-                      id: githubRunnersSubnetId
-                    }
-                    applicationGatewayBackendAddressPools: [
-                      {
-                        id: resourceId(
-                          'Microsoft.Network/applicationGateways/backendAddressPools',
-                          appGatewayName,
-                          'vmss-backend-pool'
-                        )
-                      }
-                    ]
-                  }
-                }
-              ]
+          privateIPAllocationMethod: 'Dynamic'
+          applicationGatewayBackendAddressPools: [
+            {
+              id: resourceId(
+                'Microsoft.Network/applicationGateways/backendAddressPools',
+                appGatewayName,
+                'wfe-backend-pool'
+              )
             }
-          }
-        ]
+          ]
+        }
       }
+    ]
+  }
+}
+
+resource wfeVm 'Microsoft.Compute/virtualMachines@2023-09-01' = {
+  name: wfeVmName
+  location: location
+  tags: tags
+  properties: {
+    hardwareProfile: {
+      vmSize: vmSize
+    }
+    osProfile: {
+      computerName: take('${resourcePrefix}-wfe', 15)
+      adminUsername: adminUsername
+      adminPassword: adminPassword
+      windowsConfiguration: {
+        enableAutomaticUpdates: true
+        provisionVMAgent: true
+      }
+    }
+    storageProfile: {
+      osDisk: {
+        createOption: 'FromImage'
+        caching: 'ReadWrite'
+        managedDisk: {
+          storageAccountType: 'Premium_LRS'
+        }
+      }
+      imageReference: {
+        publisher: 'MicrosoftWindowsServer'
+        offer: 'WindowsServer'
+        sku: '2022-datacenter-azure-edition'
+        version: 'latest'
+      }
+    }
+    networkProfile: {
+      networkInterfaces: [
+        {
+          id: wfeNic.id
+        }
+      ]
     }
   }
   dependsOn: [
@@ -290,7 +286,7 @@ resource appGateway 'Microsoft.Network/applicationGateways@2023-11-01' = {
     ]
     backendAddressPools: [
       {
-        name: 'vmss-backend-pool'
+        name: 'wfe-backend-pool'
         properties: {
           backendAddresses: []
         }
@@ -364,7 +360,7 @@ resource appGateway 'Microsoft.Network/applicationGateways@2023-11-01' = {
             id: resourceId(
               'Microsoft.Network/applicationGateways/backendAddressPools',
               appGatewayName,
-              'vmss-backend-pool'
+              'wfe-backend-pool'
             )
           }
           backendHttpSettings: {
@@ -432,8 +428,9 @@ resource appGateway 'Microsoft.Network/applicationGateways@2023-11-01' = {
 }
 
 // Outputs
-output vmssId string = vmss.id
-output vmssName string = vmss.name
+output wfeVmId string = wfeVm.id
+output wfeVmName string = wfeVm.name
+output wfeVmPrivateIp string = wfeNic.properties.ipConfigurations[0].properties.privateIPAddress
 output sqlVmId string = sqlVm.id
 output sqlVmName string = sqlVm.name
 output sqlVmPrivateIp string = sqlVmNic.properties.ipConfigurations[0].properties.privateIPAddress
