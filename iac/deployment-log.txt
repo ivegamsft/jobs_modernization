@@ -1,0 +1,8 @@
+File C:\git\jobs_modernization\iac\deploy-app-layers.ps1 cannot be loaded. 
+The file C:\git\jobs_modernization\iac\deploy-app-layers.ps1 is not 
+digitally signed. You cannot run this script on the current system. For 
+more information about running scripts and setting execution policy, see 
+about_Execution_Policies at https:/go.microsoft.com/fwlink/?LinkID=135170.
+    + CategoryInfo          : SecurityError: (:) [], ParentContainsErrorRec 
+   ordException
+    + FullyQualifiedErrorId : UnauthorizedAccess

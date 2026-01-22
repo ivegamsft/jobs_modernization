@@ -96,7 +96,7 @@ resource vmss 'Microsoft.Compute/virtualMachineScaleSets@2023-09-01' = {
                   name: 'ipconfig1'
                   properties: {
                     subnet: {
-                      id: frontendSubnetId
+                      id: dataSubnetId
                     }
                     applicationGatewayBackendAddressPools: [
                       {
@@ -150,7 +150,7 @@ resource sqlVm 'Microsoft.Compute/virtualMachines@2023-09-01' = {
       vmSize: sqlVmSize
     }
     osProfile: {
-      computerName: sqlVmName
+      computerName: take('${resourcePrefix}-sql', 15)
       adminUsername: adminUsername
       adminPassword: adminPassword
       windowsConfiguration: {
