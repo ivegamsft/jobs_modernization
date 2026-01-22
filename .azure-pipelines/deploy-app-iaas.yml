@@ -1,0 +1,96 @@
+trigger: none
+pr: none
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  azureSubscription: 'jobsite-iaas-connection'
+  deploymentName: 'jobsite-iaas'
+  environment: 'dev'
+
+stages:
+- stage: Download
+  displayName: 'Download Build Artifacts'
+  jobs:
+  - job: DownloadArtifacts
+    displayName: 'Get JobsSiteWeb Build'
+    steps:
+    - task: DownloadBuildArtifacts@1
+      displayName: 'Download Build Artifacts'
+      inputs:
+        buildType: 'latest'
+        downloadType: 'single'
+        artifactName: 'jobsiteweb-build'
+        downloadPath: '$(Pipeline.Workspace)/app-build'
+
+- stage: Deploy
+  displayName: 'Deploy to IaaS'
+  dependsOn: Download
+  jobs:
+  - deployment: DeployToIaaS
+    displayName: 'Deploy Application to VMs'
+    environment: 'iaas-deployment'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: 'Get IaaS Deployment Outputs'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'powershell'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                $deploymentName = "$(deploymentName)-$(environment)-*"
+                $outputs = az deployment sub list --query "[?name_like('$(deploymentName)')] | [0].properties.outputs" -o json
+                Write-Host "##vso[task.setvariable variable=DEPLOYMENT_OUTPUTS]$outputs"
+
+          - powershell: |
+              $outputsJson = '$(DEPLOYMENT_OUTPUTS)' | ConvertFrom-Json
+              $vmPublicIps = $outputsJson.vmPublicIps.value
+              $appPath = "C:\inetpub\wwwroot\JobSiteWeb"
+              
+              foreach ($vmIp in $vmPublicIps) {
+                Write-Host "Deploying to VM: $vmIp"
+                
+                # Establish PSRemoting session
+                $session = New-PSSession -ComputerName $vmIp -Credential $(vmCredentials)
+                
+                # Copy application files
+                Copy-Item -Path "$(Pipeline.Workspace)/app-build/*" -Destination $appPath -ToSession $session -Recurse -Force
+                
+                # Reset IIS application pool
+                Invoke-Command -Session $session -ScriptBlock {
+                  Restart-WebAppPool -Name "JobSiteWeb"
+                }
+                
+                Remove-PSSession -Session $session
+                Write-Host "Deployment complete for $vmIp"
+              }
+            displayName: 'Deploy to IIS'
+            env:
+              vmCredentials: $(vmCredentials)
+
+          - powershell: |
+              $outputsJson = '$(DEPLOYMENT_OUTPUTS)' | ConvertFrom-Json
+              $vmPublicIps = $outputsJson.vmPublicIps.value
+              
+              foreach ($vmIp in $vmPublicIps) {
+                Write-Host "Verifying deployment on $vmIp..."
+                try {
+                  $response = Invoke-WebRequest -Uri "http://$vmIp/JobSiteWeb" -SkipHttpErrorCheck -TimeoutSec 10
+                  Write-Host "Response Status: $($response.StatusCode)"
+                  
+                  if ($response.StatusCode -eq 200) {
+                    Write-Host "Deployment verified successfully" -ForegroundColor Green
+                  } else {
+                    Write-Host "Unexpected status code: $($response.StatusCode)" -ForegroundColor Yellow
+                  }
+                } catch {
+                  Write-Host "Verification failed: $_" -ForegroundColor Red
+                }
+              }
+            displayName: 'Verify Deployment'

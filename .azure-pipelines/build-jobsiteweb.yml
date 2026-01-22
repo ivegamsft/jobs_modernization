@@ -1,0 +1,65 @@
+trigger:
+  branches:
+    include:
+    - main
+    - develop
+  paths:
+    include:
+    - appV1.5-JobsSiteWeb/**
+    - azure-pipelines/build-jobsiteweb.yml
+
+pr:
+  branches:
+    include:
+    - main
+    - develop
+  paths:
+    include:
+    - appV1.5-JobsSiteWeb/**
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  buildConfiguration: 'Debug'
+  buildPlatform: 'Any CPU'
+
+stages:
+- stage: Build
+  displayName: 'Build JobsSiteWeb'
+  jobs:
+  - job: BuildJob
+    displayName: 'Build & Package'
+    steps:
+    - task: NuGetToolInstaller@1
+      displayName: 'Install NuGet'
+
+    - task: NuGetCommand@2
+      displayName: 'Restore NuGet packages'
+      inputs:
+        command: 'restore'
+        solution: 'appV1.5-JobsSiteWeb/JobsSiteWeb.csproj'
+
+    - task: VSBuild@1
+      displayName: 'Build Solution'
+      inputs:
+        solution: 'appV1.5-JobsSiteWeb/JobsSiteWeb.csproj'
+        msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=FileSystem /p:PublishProfile=FileSystemPublish'
+        platform: '$(buildPlatform)'
+        configuration: '$(buildConfiguration)'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish Application'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: 'appV1.5-JobsSiteWeb/JobsSiteWeb.csproj'
+        arguments: '-c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)'
+        zipAfterPublish: true
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Build Artifacts'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'jobsiteweb-build'
+        publishLocation: 'Container'

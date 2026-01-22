@@ -1,0 +1,92 @@
+name: Deploy App to IaaS
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment (dev, staging, prod)'
+        required: true
+        default: 'dev'
+  workflow_run:
+    workflows: ["Build JobsSiteWeb"]
+    types:
+      - completed
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: jobsiteweb-build
+          path: ./app-build/
+
+      - name: Azure Login with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get IaaS deployment outputs
+        run: |
+          ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
+          az deployment sub show \
+            --name "jobsite-iaas-${ENVIRONMENT}" \
+            --query "properties.outputs" \
+            -o json > iaas-outputs.json
+
+      - name: Deploy to IIS on VMs
+        run: |
+          $outputFile = Get-Content -Path "iaas-outputs.json" | ConvertFrom-Json
+          
+          # Extract VM connection details from outputs
+          $vmIps = $outputFile.vmPublicIps.value
+          $appPath = "C:\inetpub\wwwroot\JobSiteWeb"
+          
+          foreach ($vmIp in $vmIps) {
+            Write-Host "Deploying to VM: $vmIp"
+            
+            # Copy application files to VM via RDP/PSRemoting
+            # Ensure PSRemoting is configured on target VMs
+            $session = New-PSSession -ComputerName $vmIp -Credential ${{ secrets.VM_CREDENTIAL }}
+            
+            Copy-Item -Path "./app-build/*" -Destination $appPath -ToSession $session -Recurse -Force
+            
+            # Reset IIS application pool
+            Invoke-Command -Session $session -ScriptBlock {
+              Restart-WebAppPool -Name "JobSiteWeb"
+            }
+            
+            Remove-PSSession -Session $session
+          }
+        shell: pwsh
+
+      - name: Verify deployment
+        run: |
+          $outputFile = Get-Content -Path "iaas-outputs.json" | ConvertFrom-Json
+          $vmIps = $outputFile.vmPublicIps.value
+          
+          foreach ($vmIp in $vmIps) {
+            Write-Host "Checking deployment on $vmIp..."
+            $response = Invoke-WebRequest -Uri "http://$vmIp/JobSiteWeb" -SkipHttpErrorCheck
+            Write-Host "Response Status: $($response.StatusCode)"
+          }
+        shell: pwsh
+
+outputs:
+  deployment-status:
+    value: ${{ job.status }}
+  environment:
+    value: ${{ github.event.inputs.environment || 'dev' }}

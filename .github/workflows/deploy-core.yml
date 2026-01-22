@@ -1,0 +1,80 @@
+name: Deploy Core Infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'iac/bicep/core/**'
+      - '.github/workflows/deploy-core.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'iac/bicep/core/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment (dev, staging, prod)'
+        required: true
+        default: 'dev'
+      location:
+        description: 'Azure region'
+        required: true
+        default: 'swedencentral'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Core Resources
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
+            LOCATION="${{ github.event.inputs.location || 'swedencentral' }}"
+            
+            az deployment sub create \
+              --name "jobsite-core-${ENVIRONMENT}" \
+              --location "$LOCATION" \
+              --template-file "./iac/bicep/core/main.bicep" \
+              --parameters \
+                environment="$ENVIRONMENT" \
+                location="$LOCATION"
+
+      - name: Get deployment outputs
+        run: |
+          ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
+          az deployment sub show \
+            --name "jobsite-core-${ENVIRONMENT}" \
+            --query "properties.outputs" \
+            -o json > core-outputs.json
+            
+          echo "DEPLOYMENT_OUTPUTS=$(cat core-outputs.json)" >> $env:GITHUB_OUTPUT
+        id: deploy-output
+
+      - name: Upload outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-deployment-outputs
+          path: core-outputs.json
+          retention-days: 30
+
+outputs:
+  deployment-status:
+    value: ${{ job.status }}
+  outputs-path:
+    value: core-outputs.json

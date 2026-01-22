@@ -1,0 +1,92 @@
+trigger: none
+pr: none
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  azureSubscription: 'jobsite-iaas-connection'
+  deploymentName: 'jobsite-iaas'
+  environment: 'dev'
+
+stages:
+- stage: Download
+  displayName: 'Download Database Artifacts'
+  jobs:
+  - job: DownloadArtifacts
+    displayName: 'Get DACPAC Build'
+    steps:
+    - task: DownloadBuildArtifacts@1
+      displayName: 'Download DACPAC Artifacts'
+      inputs:
+        buildType: 'latest'
+        downloadType: 'single'
+        artifactName: 'database-dacpac'
+        downloadPath: '$(Pipeline.Workspace)/dacpac'
+
+- stage: Deploy
+  displayName: 'Deploy Database to IaaS'
+  dependsOn: Download
+  jobs:
+  - deployment: DeployDatabaseIaaS
+    displayName: 'Deploy DACPAC to SQL Server VM'
+    environment: 'iaas-database-deployment'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: 'Get IaaS Outputs'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'powershell'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                $outputs = az deployment sub show `
+                  --name "$(deploymentName)-$(environment)-*" `
+                  --query "properties.outputs" `
+                  -o json | ConvertFrom-Json
+                Write-Host "##vso[task.setvariable variable=SQLVM_IP]$($outputs.sqlVmPublicIp.value)"
+
+          - task: SqlPackageInstaller@0
+            displayName: 'Install SqlPackage'
+
+          - powershell: |
+              $dacFiles = Get-ChildItem -Path "$(Pipeline.Workspace)/dacpac" -Filter "*.dacpac" -Recurse
+              $sqlVmIp = "$(SQLVM_IP)"
+              $connectionString = "Server=$sqlVmIp;User Id=sqladmin;Password=$(sqlAdminPassword);Encrypt=false;"
+              
+              foreach ($dacFile in $dacFiles) {
+                Write-Host "Deploying DACPAC: $($dacFile.Name)"
+                
+                SqlPackage.exe /Action:Publish `
+                  /SourceFile:"$($dacFile.FullName)" `
+                  /TargetConnectionString:"$connectionString" `
+                  /TargetDatabaseName:"JobsiteDb" `
+                  /p:RegisterDataTierApplication=true `
+                  /p:AllowIncompatiblePlatform=true
+              }
+            displayName: 'Deploy DACPAC via SqlPackage'
+            env:
+              sqlAdminPassword: $(sqlAdminPassword)
+
+          - powershell: |
+              $sqlVmIp = "$(SQLVM_IP)"
+              $connectionString = "Server=$sqlVmIp;User Id=sqladmin;Password=$(sqlAdminPassword);Encrypt=false;"
+              
+              $connection = New-Object System.Data.SqlClient.SqlConnection
+              $connection.ConnectionString = $connectionString
+              $connection.Open()
+              
+              $command = $connection.CreateCommand()
+              $command.CommandText = "SELECT @@version"
+              $result = $command.ExecuteScalar()
+              
+              Write-Host "Database connection successful"
+              Write-Host "SQL Server version: $result"
+              $connection.Close()
+            displayName: 'Verify Database Connection'
+            env:
+              sqlAdminPassword: $(sqlAdminPassword)

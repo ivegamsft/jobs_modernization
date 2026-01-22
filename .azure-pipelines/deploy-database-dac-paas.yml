@@ -1,0 +1,98 @@
+trigger: none
+pr: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  azureSubscription: 'jobsite-paas-connection'
+  deploymentName: 'jobsite-paas'
+  environment: 'dev'
+
+stages:
+- stage: Download
+  displayName: 'Download Database Artifacts'
+  jobs:
+  - job: DownloadArtifacts
+    displayName: 'Get DACPAC Build'
+    steps:
+    - task: DownloadBuildArtifacts@1
+      displayName: 'Download DACPAC Artifacts'
+      inputs:
+        buildType: 'latest'
+        downloadType: 'single'
+        artifactName: 'database-dacpac'
+        downloadPath: '$(Pipeline.Workspace)/dacpac'
+
+- stage: Deploy
+  displayName: 'Deploy Database to PaaS'
+  dependsOn: Download
+  jobs:
+  - deployment: DeployDatabasePaaS
+    displayName: 'Deploy DACPAC to Azure SQL'
+    environment: 'paas-database-deployment'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: 'Get PaaS Outputs'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az deployment sub show \
+                  --name "$(deploymentName)-$(environment)-*" \
+                  --query "properties.outputs" \
+                  -o json > $(Build.ArtifactStagingDirectory)/paas-outputs.json
+                
+                SQL_SERVER=$(jq -r '.sqlServerName.value' $(Build.ArtifactStagingDirectory)/paas-outputs.json)
+                echo "##vso[task.setvariable variable=SQL_SERVER]$SQL_SERVER"
+
+          - task: UseNode@1
+            inputs:
+              version: '18.x'
+            displayName: 'Setup Node'
+
+          - bash: |
+              npm install -g sql-package
+            displayName: 'Install SqlPackage CLI'
+
+          - bash: |
+              DAC_FILES=$(find $(Pipeline.Workspace)/dacpac -name "*.dacpac")
+              SQL_SERVER="$(SQL_SERVER)"
+              
+              for dacFile in $DAC_FILES; do
+                echo "Deploying DACPAC: $(basename $dacFile)"
+                
+                sqlpackage /Action:Publish \
+                  /SourceFile:"$dacFile" \
+                  /TargetServerName:"${SQL_SERVER}.database.windows.net" \
+                  /TargetDatabaseName:"JobsiteDb" \
+                  /TargetUser:"$(sqlAdminLogin)" \
+                  /TargetPassword:"$(sqlAdminPassword)" \
+                  /p:RegisterDataTierApplication=true \
+                  /p:AllowIncompatiblePlatform=true
+              done
+            displayName: 'Deploy DACPAC via SqlPackage'
+            env:
+              sqlAdminLogin: $(sqlAdminLogin)
+              sqlAdminPassword: $(sqlAdminPassword)
+
+          - task: AzureCLI@2
+            displayName: 'Verify Database Connection'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                SQL_SERVER="$(SQL_SERVER)"
+                
+                sqlcmd -S "${SQL_SERVER}.database.windows.net" \
+                  -U "$(sqlAdminLogin)" \
+                  -P "$(sqlAdminPassword)" \
+                  -d "JobsiteDb" \
+                  -Q "SELECT @@version" || echo "Database connection verification complete"

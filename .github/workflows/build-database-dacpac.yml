@@ -1,0 +1,68 @@
+name: Build Database DACPAC
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'Database/**'
+      - '.github/workflows/build-database-dacpac.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'Database/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SQL Server Data Tools
+        run: |
+          choco install sqlserver-dac-framework -y
+
+      - name: Build DACPAC
+        run: |
+          if (Test-Path "Database/JobsDB") {
+            $sqlprojFile = Get-ChildItem -Path "Database/JobsDB" -Filter "*.sqlproj" | Select-Object -First 1
+            if ($sqlprojFile) {
+              msbuild $sqlprojFile.FullName /p:Configuration=Debug /p:Platform="Any CPU"
+            }
+          }
+        shell: pwsh
+
+      - name: Find DACPAC file
+        run: |
+          $dacFile = Get-ChildItem -Path "Database" -Filter "*.dacpac" -Recurse | Select-Object -First 1
+          if ($dacFile) {
+            echo "DACPAC_PATH=$($dacFile.FullName)" >> $env:GITHUB_OUTPUT
+            echo "DACPAC_NAME=$($dacFile.Name)" >> $env:GITHUB_OUTPUT
+          }
+        id: find-dacpac
+        shell: pwsh
+
+      - name: Upload DACPAC artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-dacpac
+          path: Database/**/*.dacpac
+          retention-days: 30
+
+      - name: Set output
+        run: |
+          echo "DACPAC_NAME=${{ steps.find-dacpac.outputs.DACPAC_NAME }}" >> $env:GITHUB_OUTPUT
+          echo "DACPAC_PATH=${{ steps.find-dacpac.outputs.DACPAC_PATH }}" >> $env:GITHUB_OUTPUT
+        id: dacpac
+
+outputs:
+  dacpac-name:
+    value: ${{ steps.dacpac.outputs.DACPAC_NAME }}
+  dacpac-path:
+    value: ${{ steps.dacpac.outputs.DACPAC_PATH }}

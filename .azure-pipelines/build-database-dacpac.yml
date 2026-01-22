@@ -1,0 +1,70 @@
+trigger:
+  branches:
+    include:
+    - main
+    - develop
+  paths:
+    include:
+    - Database/**
+    - azure-pipelines/build-database-dacpac.yml
+
+pr:
+  branches:
+    include:
+    - main
+    - develop
+  paths:
+    include:
+    - Database/**
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  buildConfiguration: 'Debug'
+
+stages:
+- stage: Build
+  displayName: 'Build Database DACPAC'
+  jobs:
+  - job: BuildDACPAC
+    displayName: 'Build & Package DACPAC'
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Install .NET SDK'
+      inputs:
+        version: '8.x'
+
+    - powershell: |
+        if (Test-Path "Database/JobsDB") {
+          $sqlprojFile = Get-ChildItem -Path "Database/JobsDB" -Filter "*.sqlproj" | Select-Object -First 1
+          if ($sqlprojFile) {
+            Write-Host "Building: $($sqlprojFile.FullName)"
+            msbuild $sqlprojFile.FullName /p:Configuration=$(buildConfiguration) /p:Platform="Any CPU"
+          } else {
+            Write-Host "No .sqlproj file found"
+          }
+        }
+      displayName: 'Build SQL Server Project'
+
+    - powershell: |
+        $dacFiles = Get-ChildItem -Path "Database" -Filter "*.dacpac" -Recurse
+        if ($dacFiles) {
+          Write-Host "Found DACPAC files:"
+          $dacFiles | ForEach-Object { Write-Host "  - $($_.FullName)" }
+          
+          # Copy to staging directory
+          foreach ($file in $dacFiles) {
+            Copy-Item -Path $file.FullName -Destination "$(Build.ArtifactStagingDirectory)/" -Force
+          }
+        } else {
+          Write-Host "No DACPAC files found"
+        }
+      displayName: 'Locate & Copy DACPAC Files'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish DACPAC Artifacts'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'database-dacpac'
+        publishLocation: 'Container'

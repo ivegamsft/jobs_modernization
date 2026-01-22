@@ -1,0 +1,67 @@
+name: Build JobsSiteWeb
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'appV1.5-JobsSiteWeb/**'
+      - '.github/workflows/build-jobsiteweb.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'appV1.5-JobsSiteWeb/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Restore NuGet packages
+        run: |
+          nuget restore appV1.5-JobsSiteWeb/JobsSiteWeb.csproj
+
+      - name: Build Solution
+        run: |
+          msbuild appV1.5-JobsSiteWeb/JobsSiteWeb.csproj `
+            /p:Configuration=Debug `
+            /p:Platform="Any CPU" `
+            /p:DeployOnBuild=true `
+            /p:WebPublishMethod=FileSystem `
+            /p:PublishProfile=FileSystemPublish
+
+      - name: Publish artifacts
+        run: |
+          dotnet publish appV1.5-JobsSiteWeb/JobsSiteWeb.csproj `
+            -c Debug `
+            -o ./publish `
+            --no-build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: jobsiteweb-build
+          path: ./publish/
+          retention-days: 30
+
+      - name: Set build output
+        run: |
+          echo "BUILD_ARTIFACT_PATH=./publish" >> $env:GITHUB_OUTPUT
+          echo "BUILD_VERSION=$(Get-Date -Format 'yyyyMMddHHmmss')" >> $env:GITHUB_OUTPUT
+        id: build
+
+outputs:
+  build-artifact-path:
+    value: ${{ steps.build.outputs.BUILD_ARTIFACT_PATH }}
+  build-version:
+    value: ${{ steps.build.outputs.BUILD_VERSION }}

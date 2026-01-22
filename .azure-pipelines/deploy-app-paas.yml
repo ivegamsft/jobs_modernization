@@ -1,0 +1,68 @@
+trigger: none
+pr: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  azureSubscription: 'jobsite-paas-connection'
+  deploymentName: 'jobsite-paas'
+  environment: 'dev'
+  appServiceName: 'app-jobsite-$(environment)'
+
+stages:
+- stage: Download
+  displayName: 'Download Build Artifacts'
+  jobs:
+  - job: DownloadArtifacts
+    displayName: 'Get JobsSiteWeb Build'
+    steps:
+    - task: DownloadBuildArtifacts@1
+      displayName: 'Download Build Artifacts'
+      inputs:
+        buildType: 'latest'
+        downloadType: 'single'
+        artifactName: 'jobsiteweb-build'
+        downloadPath: '$(Pipeline.Workspace)/app-build'
+
+- stage: Deploy
+  displayName: 'Deploy to PaaS'
+  dependsOn: Download
+  jobs:
+  - deployment: DeployToPaaS
+    displayName: 'Deploy Application to App Service'
+    environment: 'paas-deployment'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: 'Get PaaS Deployment Outputs'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az deployment sub show \
+                  --name "$(deploymentName)-$(environment)-*" \
+                  --query "properties.outputs" \
+                  -o json > $(Build.ArtifactStagingDirectory)/paas-outputs.json
+
+          - task: AzureWebApp@1
+            displayName: 'Deploy to App Service'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              appType: 'webAppWindows'
+              appName: '$(appServiceName)'
+              package: '$(Pipeline.Workspace)/app-build/**/*.zip'
+              deploymentMethod: 'zipDeploy'
+
+          - bash: |
+              outputFile=$(cat $(Build.ArtifactStagingDirectory)/paas-outputs.json)
+              appServiceUrl=$(echo $outputFile | jq -r '.appServiceUrl.value')
+              
+              echo "Verifying deployment at $appServiceUrl"
+              curl -I "$appServiceUrl" || echo "Health check failed"
+            displayName: 'Verify Deployment'

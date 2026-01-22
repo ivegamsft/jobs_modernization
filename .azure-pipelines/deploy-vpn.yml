@@ -1,0 +1,73 @@
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - iac/bicep/core/vpn-gateway.bicep
+    - iac/bicep/core/deploy-vpn.bicep
+    - azure-pipelines/deploy-vpn.yml
+
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - iac/bicep/core/vpn-gateway.bicep
+    - iac/bicep/core/deploy-vpn.bicep
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  azureSubscription: 'jobsite-vpn-connection'
+  deploymentName: 'jobsite-vpn'
+  location: 'swedencentral'
+  environment: 'dev'
+
+stages:
+- stage: Deploy
+  displayName: 'Deploy VPN Gateway'
+  jobs:
+  - deployment: DeployVPN
+    displayName: 'Deploy VPN Infrastructure'
+    environment: 'vpn-infrastructure'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            displayName: 'Deploy VPN Gateway Bicep Template'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az deployment sub create \
+                  --name "$(deploymentName)-$(environment)-$(Build.BuildId)" \
+                  --location $(location) \
+                  --template-file "./iac/bicep/core/deploy-vpn.bicep" \
+                  --parameters \
+                    environment=$(environment)
+
+          - task: AzureCLI@2
+            displayName: 'Get Deployment Outputs'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az deployment sub show \
+                  --name "$(deploymentName)-$(environment)-$(Build.BuildId)" \
+                  --query "properties.outputs" \
+                  -o json > $(Build.ArtifactStagingDirectory)/vpn-outputs.json
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Deployment Outputs'
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+              ArtifactName: 'vpn-deployment-outputs'
+              publishLocation: 'Container'

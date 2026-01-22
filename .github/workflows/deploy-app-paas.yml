@@ -1,0 +1,69 @@
+name: Deploy App to PaaS
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment (dev, staging, prod)'
+        required: true
+        default: 'dev'
+  workflow_run:
+    workflows: ["Build JobsSiteWeb"]
+    types:
+      - completed
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: jobsiteweb-build
+          path: ./app-build/
+
+      - name: Azure Login with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get PaaS deployment outputs
+        run: |
+          ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
+          az deployment sub show \
+            --name "jobsite-paas-${ENVIRONMENT}" \
+            --query "properties.outputs" \
+            -o json > paas-outputs.json
+
+      - name: Deploy to App Service
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.APP_SERVICE_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./app-build/
+
+      - name: Verify deployment
+        run: |
+          ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
+          outputFile=$(cat paas-outputs.json | jq -r .appServiceUrl.value)
+          
+          echo "Checking deployment at $outputFile"
+          curl -I "$outputFile" || echo "Health check failed"
+
+outputs:
+  deployment-status:
+    value: ${{ job.status }}
+  environment:
+    value: ${{ github.event.inputs.environment || 'dev' }}

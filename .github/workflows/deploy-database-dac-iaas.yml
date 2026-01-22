@@ -1,0 +1,97 @@
+name: Deploy Database to IaaS
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment (dev, staging, prod)'
+        required: true
+        default: 'dev'
+  workflow_run:
+    workflows: ["Build Database DACPAC"]
+    types:
+      - completed
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download DACPAC artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: database-dacpac
+          path: ./dacpac/
+
+      - name: Azure Login with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get IaaS deployment outputs
+        run: |
+          $ENVIRONMENT = "${{ github.event.inputs.environment || 'dev' }}"
+          az deployment sub show `
+            --name "jobsite-iaas-$ENVIRONMENT" `
+            --query "properties.outputs" `
+            -o json | Out-File -FilePath "iaas-outputs.json"
+
+      - name: Install SqlPackage
+        run: |
+          choco install sqlpackage -y
+
+      - name: Deploy DACPAC to SQL Server VM
+        run: |
+          $outputFile = Get-Content -Path "iaas-outputs.json" | ConvertFrom-Json
+          $sqlVmIp = $outputFile.sqlVmPublicIp.value
+          $dacFiles = Get-ChildItem -Path "./dacpac" -Filter "*.dacpac" -Recurse
+          
+          foreach ($dacFile in $dacFiles) {
+            Write-Host "Deploying DACPAC: $($dacFile.Name) to $sqlVmIp"
+            
+            $connectionString = "Server=$sqlVmIp;User Id=sqladmin;Password=${{ secrets.SQL_ADMIN_PASSWORD }};Encrypt=false;"
+            
+            # Using SqlPackage to deploy dacpac
+            SqlPackage /Action:Publish `
+              /SourceFile:"$($dacFile.FullName)" `
+              /TargetConnectionString:"$connectionString" `
+              /TargetDatabaseName:"JobsiteDb" `
+              /p:RegisterDataTierApplication=true `
+              /p:AllowIncompatiblePlatform=true
+          }
+        shell: pwsh
+
+      - name: Verify database deployment
+        run: |
+          $outputFile = Get-Content -Path "iaas-outputs.json" | ConvertFrom-Json
+          $sqlVmIp = $outputFile.sqlVmPublicIp.value
+          $connectionString = "Server=$sqlVmIp;User Id=sqladmin;Password=${{ secrets.SQL_ADMIN_PASSWORD }};Encrypt=false;"
+          
+          $connection = New-Object System.Data.SqlClient.SqlConnection
+          $connection.ConnectionString = $connectionString
+          $connection.Open()
+          
+          $command = $connection.CreateCommand()
+          $command.CommandText = "SELECT @@version"
+          $result = $command.ExecuteScalar()
+          
+          Write-Host "Database connection successful: $result"
+          $connection.Close()
+        shell: pwsh
+
+outputs:
+  deployment-status:
+    value: ${{ job.status }}
+  environment:
+    value: ${{ github.event.inputs.environment || 'dev' }}

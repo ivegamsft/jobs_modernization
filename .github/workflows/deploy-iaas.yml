@@ -1,0 +1,89 @@
+name: Deploy IaaS Infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'iac/bicep/iaas/**'
+      - '.github/workflows/deploy-iaas.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'iac/bicep/iaas/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment (dev, staging, prod)'
+        required: true
+        default: 'dev'
+      vm_size:
+        description: 'VM size'
+        required: false
+        default: 'Standard_D2ds_v6'
+      sql_vm_size:
+        description: 'SQL VM size'
+        required: false
+        default: 'Standard_D4ds_v6'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy IaaS Infrastructure
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
+            VM_SIZE="${{ github.event.inputs.vm_size || 'Standard_D2ds_v6' }}"
+            SQL_VM_SIZE="${{ github.event.inputs.sql_vm_size || 'Standard_D4ds_v6' }}"
+            
+            az deployment sub create \
+              --name "jobsite-iaas-${ENVIRONMENT}" \
+              --location "swedencentral" \
+              --template-file "./iac/bicep/iaas/main.bicep" \
+              --parameters \
+                environment="$ENVIRONMENT" \
+                vmSize="$VM_SIZE" \
+                sqlVmSize="$SQL_VM_SIZE"
+
+      - name: Get IaaS outputs
+        run: |
+          ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
+          az deployment sub show \
+            --name "jobsite-iaas-${ENVIRONMENT}" \
+            --query "properties.outputs" \
+            -o json > iaas-outputs.json
+        id: iaas-output
+
+      - name: Upload outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: iaas-deployment-outputs
+          path: iaas-outputs.json
+          retention-days: 30
+
+      - name: Set deployment status
+        run: |
+          echo "IAAS_DEPLOYED=true" >> $env:GITHUB_OUTPUT
+        id: deploy-status
+
+outputs:
+  iaas-deployed:
+    value: ${{ steps.deploy-status.outputs.IAAS_DEPLOYED }}
+  deployment-status:
+    value: ${{ job.status }}
