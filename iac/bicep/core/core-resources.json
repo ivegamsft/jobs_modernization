@@ -1,0 +1,572 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.39.26.7824",
+      "templateHash": "3862432690129518303"
+    }
+  },
+  "parameters": {
+    "environment": {
+      "type": "string"
+    },
+    "applicationName": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "vnetAddressPrefix": {
+      "type": "string"
+    },
+    "sqlAdminUsername": {
+      "type": "string"
+    },
+    "sqlAdminPassword": {
+      "type": "securestring"
+    },
+    "tags": {
+      "type": "object"
+    }
+  },
+  "variables": {
+    "uniqueSuffix": "[uniqueString(resourceGroup().id)]",
+    "resourcePrefix": "[format('{0}-{1}', parameters('applicationName'), parameters('environment'))]",
+    "subnetConfig": {
+      "frontend": {
+        "name": "snet-fe",
+        "prefix": "10.50.0.0/24"
+      },
+      "data": {
+        "name": "snet-data",
+        "prefix": "10.50.1.0/26"
+      },
+      "githubRunners": {
+        "name": "snet-gh-runners",
+        "prefix": "10.50.1.64/26"
+      },
+      "privateEndpoint": {
+        "name": "snet-pe",
+        "prefix": "10.50.1.128/27"
+      },
+      "vpnGateway": {
+        "name": "GatewaySubnet",
+        "prefix": "10.50.1.160/27"
+      },
+      "aks": {
+        "name": "snet-aks",
+        "prefix": "10.50.2.0/23"
+      },
+      "containerApps": {
+        "name": "snet-ca",
+        "prefix": "10.50.4.0/26"
+      }
+    },
+    "natGatewayName": "[format('{0}-nat-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
+    "publicIpNatName": "[format('{0}-pip-nat-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
+    "vnetName": "[format('{0}-vnet-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
+    "privateDnsZoneName": "[format('{0}.internal', parameters('applicationName'))]",
+    "locationAbbr": "[if(equals(parameters('location'), 'swedencentral'), 'swc', take(replace(parameters('location'), ' ', ''), 3))]",
+    "keyVaultName": "[format('kv-{0}-{1}-{2}', parameters('environment'), variables('locationAbbr'), take(variables('uniqueSuffix'), 10))]",
+    "logAnalyticsWorkspaceName": "[format('{0}-la-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
+    "acrName": "[format('{0}{1}acr{2}', parameters('applicationName'), parameters('environment'), variables('uniqueSuffix'))]",
+    "loadTestingName": "[format('{0}-loadtest-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
+    "chaosStudioName": "[format('{0}-chaos-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]",
+    "sreAppInsightsName": "[format('{0}-sre-ai-{1}', variables('resourcePrefix'), variables('uniqueSuffix'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2022-10-01",
+      "name": "[variables('logAnalyticsWorkspaceName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "retentionInDays": 30,
+        "sku": {
+          "name": "PerGB2018"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-11-01",
+      "name": "[variables('publicIpNatName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Static",
+        "idleTimeoutInMinutes": 4
+      }
+    },
+    {
+      "type": "Microsoft.Network/natGateways",
+      "apiVersion": "2023-11-01",
+      "name": "[variables('natGatewayName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "idleTimeoutInMinutes": 4,
+        "publicIpAddresses": [
+          {
+            "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpNatName'))]"
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpNatName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2023-11-01",
+      "name": "[variables('vnetName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('vnetAddressPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('subnetConfig').frontend.name]",
+            "properties": {
+              "addressPrefix": "[variables('subnetConfig').frontend.prefix]",
+              "natGateway": {
+                "id": "[resourceId('Microsoft.Network/natGateways', variables('natGatewayName'))]"
+              },
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+          },
+          {
+            "name": "[variables('subnetConfig').data.name]",
+            "properties": {
+              "addressPrefix": "[variables('subnetConfig').data.prefix]",
+              "natGateway": {
+                "id": "[resourceId('Microsoft.Network/natGateways', variables('natGatewayName'))]"
+              },
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+          },
+          {
+            "name": "[variables('subnetConfig').vpnGateway.name]",
+            "properties": {
+              "addressPrefix": "[variables('subnetConfig').vpnGateway.prefix]",
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+          },
+          {
+            "name": "[variables('subnetConfig').privateEndpoint.name]",
+            "properties": {
+              "addressPrefix": "[variables('subnetConfig').privateEndpoint.prefix]",
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+          },
+          {
+            "name": "[variables('subnetConfig').githubRunners.name]",
+            "properties": {
+              "addressPrefix": "[variables('subnetConfig').githubRunners.prefix]",
+              "natGateway": {
+                "id": "[resourceId('Microsoft.Network/natGateways', variables('natGatewayName'))]"
+              },
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+          },
+          {
+            "name": "[variables('subnetConfig').aks.name]",
+            "properties": {
+              "addressPrefix": "[variables('subnetConfig').aks.prefix]",
+              "natGateway": {
+                "id": "[resourceId('Microsoft.Network/natGateways', variables('natGatewayName'))]"
+              },
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+          },
+          {
+            "name": "[variables('subnetConfig').containerApps.name]",
+            "properties": {
+              "addressPrefix": "[variables('subnetConfig').containerApps.prefix]",
+              "natGateway": {
+                "id": "[resourceId('Microsoft.Network/natGateways', variables('natGatewayName'))]"
+              },
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/natGateways', variables('natGatewayName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('privateDnsZoneName')]",
+      "location": "global",
+      "tags": "[parameters('tags')]"
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2020-06-01",
+      "name": "[format('{0}/{1}', variables('privateDnsZoneName'), format('{0}-vnetlink', variables('privateDnsZoneName')))]",
+      "location": "global",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "registrationEnabled": true,
+        "virtualNetwork": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZoneName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2023-07-01",
+      "name": "[variables('keyVaultName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "tenantId": "[subscription().tenantId]",
+        "sku": {
+          "family": "A",
+          "name": "standard"
+        },
+        "accessPolicies": [],
+        "enableRbacAuthorization": true,
+        "networkAcls": {
+          "defaultAction": "Allow",
+          "bypass": "AzureServices"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2023-07-01",
+      "name": "[format('{0}/{1}', variables('keyVaultName'), 'sql-admin-username')]",
+      "properties": {
+        "value": "[parameters('sqlAdminUsername')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2023-07-01",
+      "name": "[format('{0}/{1}', variables('keyVaultName'), 'sql-admin-password')]",
+      "properties": {
+        "value": "[parameters('sqlAdminPassword')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ContainerRegistry/registries",
+      "apiVersion": "2023-07-01",
+      "name": "[variables('acrName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "Premium"
+      },
+      "properties": {
+        "adminUserEnabled": false,
+        "publicNetworkAccess": "Disabled",
+        "networkRuleBypassOptions": "AzureServices",
+        "zoneRedundancy": "Disabled"
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints",
+      "apiVersion": "2023-11-01",
+      "name": "[format('{0}-pe', variables('acrName'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "subnet": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetConfig').privateEndpoint.name)]"
+        },
+        "privateLinkServiceConnections": [
+          {
+            "name": "[format('{0}-pe-connection', variables('acrName'))]",
+            "properties": {
+              "privateLinkServiceId": "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]",
+              "groupIds": [
+                "registry"
+              ]
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2020-06-01",
+      "name": "privatelink.azurecr.io",
+      "location": "global",
+      "tags": "[parameters('tags')]"
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2020-06-01",
+      "name": "[format('{0}/{1}', 'privatelink.azurecr.io', format('{0}-vnetlink', 'privatelink.azurecr.io'))]",
+      "location": "global",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "registrationEnabled": false,
+        "virtualNetwork": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.azurecr.io')]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+      "apiVersion": "2023-11-01",
+      "name": "[format('{0}/{1}', format('{0}-pe', variables('acrName')), 'default')]",
+      "properties": {
+        "privateDnsZoneConfigs": [
+          {
+            "name": "privatelink-azurecr-io",
+            "properties": {
+              "privateDnsZoneId": "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.azurecr.io')]"
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.azurecr.io')]",
+        "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-pe', variables('acrName')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.LoadTestService/loadTests",
+      "apiVersion": "2022-12-01",
+      "name": "[variables('loadTestingName')]",
+      "location": "[parameters('location')]",
+      "tags": "[union(parameters('tags'), createObject('Purpose', 'SRE-LoadTesting'))]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "description": "[format('Load testing service for {0} with Playwright support', parameters('applicationName'))]"
+      }
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[format('Microsoft.LoadTestService/loadTests/{0}', variables('loadTestingName'))]",
+      "name": "diagnostics",
+      "properties": {
+        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]",
+        "logs": [
+          {
+            "categoryGroup": "allLogs",
+            "enabled": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.LoadTestService/loadTests', variables('loadTestingName'))]",
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.KeyVault/vaults/{0}', variables('keyVaultName'))]",
+      "name": "[guid(resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName')), resourceId('Microsoft.LoadTestService/loadTests', variables('loadTestingName')), 'kv-secrets-user')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
+        "principalId": "[reference(resourceId('Microsoft.LoadTestService/loadTests', variables('loadTestingName')), '2022-12-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]",
+        "[resourceId('Microsoft.LoadTestService/loadTests', variables('loadTestingName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "apiVersion": "2023-01-31",
+      "name": "[format('{0}-identity', variables('chaosStudioName'))]",
+      "location": "[parameters('location')]",
+      "tags": "[union(parameters('tags'), createObject('Purpose', 'SRE-ChaosEngineering'))]"
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.OperationalInsights/workspaces/{0}', variables('logAnalyticsWorkspaceName'))]",
+      "name": "[guid(resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName')), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-identity', variables('chaosStudioName'))), 'monitoring-reader')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '43d0d8ad-25c7-4714-9337-8ba259a9fe05')]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-identity', variables('chaosStudioName'))), '2023-01-31').principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-identity', variables('chaosStudioName')))]",
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[variables('sreAppInsightsName')]",
+      "location": "[parameters('location')]",
+      "tags": "[union(parameters('tags'), createObject('Purpose', 'SRE-Monitoring'))]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web",
+        "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]",
+        "IngestionMode": "LogAnalytics",
+        "publicNetworkAccessForIngestion": "Enabled",
+        "publicNetworkAccessForQuery": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "vnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+    },
+    "vnetName": {
+      "type": "string",
+      "value": "[variables('vnetName')]"
+    },
+    "frontendSubnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetConfig').frontend.name)]"
+    },
+    "dataSubnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetConfig').data.name)]"
+    },
+    "githubRunnersSubnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetConfig').githubRunners.name)]"
+    },
+    "peSubnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetConfig').privateEndpoint.name)]"
+    },
+    "keyVaultId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+    },
+    "keyVaultName": {
+      "type": "string",
+      "value": "[variables('keyVaultName')]"
+    },
+    "privateDnsZoneId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZoneName'))]"
+    },
+    "privateDnsZoneName": {
+      "type": "string",
+      "value": "[variables('privateDnsZoneName')]"
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+    },
+    "logAnalyticsWorkspaceName": {
+      "type": "string",
+      "value": "[variables('logAnalyticsWorkspaceName')]"
+    },
+    "natGatewayPublicIp": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpNatName')), '2023-11-01').ipAddress]"
+    },
+    "acrId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]"
+    },
+    "acrName": {
+      "type": "string",
+      "value": "[variables('acrName')]"
+    },
+    "acrLoginServer": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ContainerRegistry/registries', variables('acrName')), '2023-07-01').loginServer]"
+    },
+    "containerAppsSubnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetConfig').containerApps.name)]"
+    },
+    "loadTestingId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.LoadTestService/loadTests', variables('loadTestingName'))]"
+    },
+    "loadTestingName": {
+      "type": "string",
+      "value": "[variables('loadTestingName')]"
+    },
+    "loadTestingIdentityPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.LoadTestService/loadTests', variables('loadTestingName')), '2022-12-01', 'full').identity.principalId]"
+    },
+    "chaosIdentityId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-identity', variables('chaosStudioName')))]"
+    },
+    "chaosIdentityName": {
+      "type": "string",
+      "value": "[format('{0}-identity', variables('chaosStudioName'))]"
+    },
+    "chaosIdentityPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-identity', variables('chaosStudioName'))), '2023-01-31').principalId]"
+    },
+    "chaosIdentityClientId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-identity', variables('chaosStudioName'))), '2023-01-31').clientId]"
+    },
+    "sreAppInsightsId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Insights/components', variables('sreAppInsightsName'))]"
+    },
+    "sreAppInsightsName": {
+      "type": "string",
+      "value": "[variables('sreAppInsightsName')]"
+    },
+    "sreAppInsightsInstrumentationKey": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Insights/components', variables('sreAppInsightsName')), '2020-02-02').InstrumentationKey]"
+    },
+    "sreAppInsightsConnectionString": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Insights/components', variables('sreAppInsightsName')), '2020-02-02').ConnectionString]"
+    }
+  }
+}

@@ -55,7 +55,8 @@ var natGatewayName = '${resourcePrefix}-nat-${uniqueSuffix}'
 var publicIpNatName = '${resourcePrefix}-pip-nat-${uniqueSuffix}'
 var vnetName = '${resourcePrefix}-vnet-${uniqueSuffix}'
 var privateDnsZoneName = '${applicationName}.internal'
-var keyVaultName = 'kv-${environment}-${replace(location, ' ', '')}-${take(uniqueSuffix, 6)}'
+var locationAbbr = location == 'swedencentral' ? 'swc' : take(replace(location, ' ', ''), 3)
+var keyVaultName = 'kv-${environment}-${locationAbbr}-${take(uniqueSuffix, 10)}'
 var logAnalyticsWorkspaceName = '${resourcePrefix}-la-${uniqueSuffix}'
 var acrName = '${applicationName}${environment}acr${uniqueSuffix}'
 
@@ -356,12 +357,6 @@ resource loadTestingDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-0
     logs: [
       {
         categoryGroup: 'allLogs'
-        enabled: true
-      }
-    ]
-    metrics: [
-      {
-        category: 'AllMetrics'
         enabled: true
       }
     ]
