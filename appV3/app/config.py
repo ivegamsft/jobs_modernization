@@ -12,17 +12,19 @@ class Config:
     """Base configuration class."""
     
     # Flask
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+    # SECRET_KEY should be set via environment variable for security
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        raise ValueError('SECRET_KEY environment variable must be set')
     
     # Database - SQL Server connection
     # Set DATABASE_URL environment variable:
-    # SQL Server: mssql+pyodbc://user:pass@server/database?driver=ODBC+Driver+17+for+SQL+Server
+    # SQL Server: mssql+pyodbc://user:pass@server/database?driver=ODBC+Driver+18+for+SQL+Server
     # PostgreSQL: postgresql+psycopg://user:pass@localhost:5432/database
     # SQLite: sqlite:///jobsite.db
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        'DATABASE_URL',
-        'mssql+pyodbc://sa:YourPassword123!@localhost/JobsDB?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes'
-    )
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    if not SQLALCHEMY_DATABASE_URI:
+        raise ValueError('DATABASE_URL environment variable must be set')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,

@@ -31,9 +31,8 @@ vm_size     = "Standard_D2ds_v6"
 sql_vm_size = "Standard_D4ds_v6"
 
 # PaaS Configuration (when enabled)
-app_service_sku       = "S1"
-sql_database_edition  = "Standard"
-sql_service_objective = "S1"
+app_service_sku  = "S1"
+sql_database_sku = "S1"
 
 # Agents Configuration (when enabled)
 agent_vm_size       = "Standard_D2ds_v6"
