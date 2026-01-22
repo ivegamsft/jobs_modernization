@@ -1,6 +1,9 @@
 # ============================================================================
+
 # Terraform for Azure - Jobs Modernization
+
 # Complete Infrastructure as Code using Terraform
+
 # ============================================================================
 
 ## Overview
@@ -133,6 +136,7 @@ terraform apply -var-file="prod.tfvars"
 ## Module Details
 
 ### Core Module
+
 - **Virtual Network** with 7 subnets (frontend, data, GitHub runners, private endpoints, VPN gateway, AKS, Container Apps)
 - **NAT Gateway** for outbound internet access
 - **Key Vault** with RBAC, soft delete, purge protection
@@ -141,6 +145,7 @@ terraform apply -var-file="prod.tfvars"
 - **Container Registry** (Premium SKU)
 
 ### IaaS Module
+
 - **Web Frontend VM** (Windows Server 2022)
 - **SQL Server VM** (SQL Server 2022 on Windows Server 2022)
 - **Load Balancer** with NAT rules for RDP
@@ -149,6 +154,7 @@ terraform apply -var-file="prod.tfvars"
 - **VM Extensions**: IIS, SQL, monitoring, anti-malware
 
 ### PaaS Module
+
 - **App Service Plan** (Linux or Windows)
 - **App Service** with managed identity
 - **Azure SQL Server** with AAD authentication
@@ -157,6 +163,7 @@ terraform apply -var-file="prod.tfvars"
 - **Diagnostic Settings**
 
 ### Agents Module
+
 - **Virtual Machine Scale Set** (Windows Server 2022)
 - **Auto-scaling** configuration
 - **Azure DevOps agent** installation
@@ -171,7 +178,7 @@ terraform apply -var-file="prod.tfvars"
 ✅ **Identity**: Managed identities, AAD integration  
 ✅ **Monitoring**: Log Analytics, Application Insights  
 ✅ **Access Control**: RBAC, conditional access policies  
-✅ **Compliance**: Soft delete, purge protection, audit logs  
+✅ **Compliance**: Soft delete, purge protection, audit logs
 
 ## Best Practices Implemented
 
@@ -274,6 +281,7 @@ If migrating from existing Bicep deployments:
 ## CI/CD Integration
 
 Terraform configs are integrated with:
+
 - **GitHub Actions**: `.github/workflows/terraform-*.yml`
 - **Azure DevOps**: `.azure-pipelines/terraform-*.yml`
 

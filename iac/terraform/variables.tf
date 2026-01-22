@@ -7,11 +7,17 @@
 # GENERAL CONFIGURATION
 # ============================================================================
 
+variable "subscription_id" {
+  description = "Azure subscription ID"
+  type        = string
+  sensitive   = true
+}
+
 variable "environment" {
   description = "Environment name (dev, staging, prod)"
   type        = string
   default     = "dev"
-  
+
   validation {
     condition     = contains(["dev", "staging", "prod"], var.environment)
     error_message = "Environment must be dev, staging, or prod."
@@ -83,7 +89,7 @@ variable "sql_admin_password" {
   description = "SQL Server administrator password (20+ chars, mixed case, numbers, special chars)"
   type        = string
   sensitive   = true
-  
+
   validation {
     condition     = length(var.sql_admin_password) >= 20
     error_message = "SQL admin password must be at least 20 characters."
@@ -101,7 +107,7 @@ variable "wfe_admin_password" {
   description = "VM administrator password (20+ chars, mixed case, numbers, special chars)"
   type        = string
   sensitive   = true
-  
+
   validation {
     condition     = length(var.wfe_admin_password) >= 20
     error_message = "VM admin password must be at least 20 characters."
@@ -178,7 +184,7 @@ variable "vmss_instance_count" {
   description = "Number of agent instances in VMSS"
   type        = number
   default     = 2
-  
+
   validation {
     condition     = var.vmss_instance_count >= 1 && var.vmss_instance_count <= 100
     error_message = "VMSS instance count must be between 1 and 100."

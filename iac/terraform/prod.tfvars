@@ -22,18 +22,18 @@ wfe_admin_username = "azureadmin"
 allowed_rdp_ips = []
 
 # PaaS Configuration - Production-grade SKUs
-app_service_sku        = "P2v3"
-sql_database_edition   = "Premium"
-sql_service_objective  = "P2"
+app_service_sku       = "P2v3"
+sql_database_edition  = "Premium"
+sql_service_objective = "P2"
 
 # Agents Configuration
-agent_vm_size        = "Standard_D4ds_v6"
-vmss_instance_count  = 4
+agent_vm_size       = "Standard_D4ds_v6"
+vmss_instance_count = 4
 
 # Tags
 tags = {
-  CostCenter  = "Production"
-  Owner       = "DevOps Team"
-  Project     = "JobSite"
-  Compliance  = "Required"
+  CostCenter = "Production"
+  Owner      = "DevOps Team"
+  Project    = "JobSite"
+  Compliance = "Required"
 }

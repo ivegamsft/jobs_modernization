@@ -14,36 +14,36 @@ locals {
   resource_prefix = "${var.application_name}-${var.environment}"
   unique_suffix   = random_string.unique_suffix.result
   location_abbr   = var.location == "swedencentral" ? "swc" : substr(replace(var.location, " ", ""), 0, 3)
-  
+
   # Subnet Configuration - Production Ready Sizing
   subnet_config = {
     frontend = {
-      name    = "snet-fe"
-      prefix  = "10.50.0.0/24" # 251 usable IPs
+      name   = "snet-fe"
+      prefix = "10.50.0.0/24" # 251 usable IPs
     }
     data = {
-      name    = "snet-data"
-      prefix  = "10.50.1.0/26" # 59 usable IPs
+      name   = "snet-data"
+      prefix = "10.50.1.0/26" # 59 usable IPs
     }
     github_runners = {
-      name    = "snet-gh-runners"
-      prefix  = "10.50.1.64/26" # 59 usable IPs
+      name   = "snet-gh-runners"
+      prefix = "10.50.1.64/26" # 59 usable IPs
     }
     private_endpoint = {
-      name    = "snet-pe"
-      prefix  = "10.50.1.128/27" # 27 usable IPs
+      name   = "snet-pe"
+      prefix = "10.50.1.128/27" # 27 usable IPs
     }
     vpn_gateway = {
-      name    = "GatewaySubnet"
-      prefix  = "10.50.1.160/27" # 27 usable IPs
+      name   = "GatewaySubnet"
+      prefix = "10.50.1.160/27" # 27 usable IPs
     }
     aks = {
-      name    = "snet-aks"
-      prefix  = "10.50.2.0/23" # 507 usable IPs
+      name   = "snet-aks"
+      prefix = "10.50.2.0/23" # 507 usable IPs
     }
     container_apps = {
-      name    = "snet-ca"
-      prefix  = "10.50.4.0/26" # 59 usable IPs
+      name   = "snet-ca"
+      prefix = "10.50.4.0/26" # 59 usable IPs
     }
   }
 }
@@ -131,7 +131,7 @@ resource "azurerm_subnet" "frontend" {
   resource_group_name  = azurerm_resource_group.core.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [local.subnet_config.frontend.prefix]
-  
+
   private_endpoint_network_policies             = "Disabled"
   private_link_service_network_policies_enabled = true
 }
@@ -147,7 +147,7 @@ resource "azurerm_subnet" "data" {
   resource_group_name  = azurerm_resource_group.core.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [local.subnet_config.data.prefix]
-  
+
   private_endpoint_network_policies             = "Disabled"
   private_link_service_network_policies_enabled = true
 }
@@ -163,7 +163,7 @@ resource "azurerm_subnet" "github_runners" {
   resource_group_name  = azurerm_resource_group.core.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [local.subnet_config.github_runners.prefix]
-  
+
   private_endpoint_network_policies             = "Disabled"
   private_link_service_network_policies_enabled = true
 }
@@ -179,7 +179,7 @@ resource "azurerm_subnet" "private_endpoint" {
   resource_group_name  = azurerm_resource_group.core.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [local.subnet_config.private_endpoint.prefix]
-  
+
   private_endpoint_network_policies             = "Disabled"
   private_link_service_network_policies_enabled = true
 }
@@ -198,7 +198,7 @@ resource "azurerm_subnet" "aks" {
   resource_group_name  = azurerm_resource_group.core.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [local.subnet_config.aks.prefix]
-  
+
   private_endpoint_network_policies             = "Disabled"
   private_link_service_network_policies_enabled = true
 }
@@ -209,7 +209,7 @@ resource "azurerm_subnet" "container_apps" {
   resource_group_name  = azurerm_resource_group.core.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [local.subnet_config.container_apps.prefix]
-  
+
   delegation {
     name = "Microsoft.App.environments"
     service_delegation {
@@ -235,16 +235,16 @@ resource "azurerm_key_vault" "main" {
   sku_name                   = "standard"
   soft_delete_retention_days = 90
   purge_protection_enabled   = true
-  
+
   enabled_for_deployment          = true
   enabled_for_disk_encryption     = true
   enabled_for_template_deployment = true
-  enable_rbac_authorization       = true
-  
+  rbac_authorization_enabled      = true
+
   network_acls {
     bypass         = "AzureServices"
     default_action = "Deny"
-    
+
     # Allow access from subnets
     virtual_network_subnet_ids = [
       azurerm_subnet.frontend.id,
@@ -252,7 +252,7 @@ resource "azurerm_key_vault" "main" {
       azurerm_subnet.github_runners.id
     ]
   }
-  
+
   tags = var.tags
 }
 
@@ -261,7 +261,7 @@ resource "azurerm_key_vault_secret" "sql_admin_password" {
   name         = "sql-admin-password"
   value        = var.sql_admin_password
   key_vault_id = azurerm_key_vault.main.id
-  
+
   depends_on = [azurerm_key_vault.main]
 }
 
@@ -269,7 +269,7 @@ resource "azurerm_key_vault_secret" "wfe_admin_password" {
   name         = "wfe-admin-password"
   value        = var.wfe_admin_password
   key_vault_id = azurerm_key_vault.main.id
-  
+
   depends_on = [azurerm_key_vault.main]
 }
 
@@ -302,20 +302,10 @@ resource "azurerm_container_registry" "main" {
   resource_group_name = azurerm_resource_group.core.name
   sku                 = "Premium"
   admin_enabled       = false
-  
+
   network_rule_set {
     default_action = "Deny"
-    
-    virtual_network {
-      action    = "Allow"
-      subnet_id = azurerm_subnet.frontend.id
-    }
-    
-    virtual_network {
-      action    = "Allow"
-      subnet_id = azurerm_subnet.github_runners.id
-    }
   }
-  
+
   tags = var.tags
 }

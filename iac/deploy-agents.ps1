@@ -15,6 +15,25 @@ $location = "swedencentral"
 $agentTemplateFile = "./bicep/agents/main.bicep"
 
 # ============================================================================
+# Get Azure DevOps Configuration
+# ============================================================================
+
+Write-Host "0. Configuring Azure DevOps agent pool..." -ForegroundColor Yellow
+$azureDevOpsOrgUrl = Read-Host "   Enter your Azure DevOps organization URL (e.g., https://dev.azure.com/myorg)"
+$azureDevOpsPat = Read-Host "   Enter your Azure DevOps Personal Access Token (PAT)" -AsSecureString
+$azureDevOpsAgentPool = Read-Host "   Enter agent pool name (default: 'Default')" 
+
+if ([string]::IsNullOrEmpty($azureDevOpsAgentPool)) {
+    $azureDevOpsAgentPool = "Default"
+}
+
+# Convert secure string to plain text for template
+$azureDevOpsPatPlain = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToCoTaskMemAlloc($azureDevOpsPat))
+
+Write-Host "   ✅ Azure DevOps configuration captured" -ForegroundColor Green
+Write-Host ""
+
+# ============================================================================
 # Get Core Outputs
 # ============================================================================
 
@@ -47,12 +66,17 @@ if ($existingPassword) {
     Write-Host "   ✅ Using existing password from Key Vault" -ForegroundColor Green
 }
 else {
-    # Generate new password
+    # Generate new password - must meet Windows complexity requirements
     $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    $special = "!@#$%"
-    $adminPassword = -join ((1..12) | ForEach-Object { $chars[(Get-Random -Maximum $chars.Length)] })
-    $adminPassword += $special[(Get-Random -Maximum $special.Length)]
-    $adminPassword += "Aa1"
+    $special = "!@#$%^&*"
+    $password = ""
+    $password += $chars[(Get-Random -Maximum $chars.Length)].ToString().ToUpper()  # Uppercase
+    $password += $chars[(Get-Random -Maximum $chars.Length)]  # Lowercase
+    $password += (0..9 | Get-Random)  # Number
+    $password += $special[(Get-Random -Maximum $special.Length)]  # Special char
+    $password += -join ((1..12) | ForEach-Object { $chars[(Get-Random -Maximum $chars.Length)] })
+    
+    $adminPassword = $password
     
     # Store in Key Vault
     az keyvault secret set --vault-name $keyVaultName --name "agents-admin-password" --value $adminPassword | Out-Null
@@ -68,12 +92,15 @@ Write-Host ""
 Write-Host "3. Deploying agents infrastructure..." -ForegroundColor Yellow
 
 $agentParams = @{
-    environment       = $environment
-    applicationName   = $applicationName
-    location          = $location
-    adminPassword     = $adminPassword
-    agentVmSize       = "Standard_D2ds_v6"
-    vmssInstanceCount = 2
+    environment          = $environment
+    applicationName      = $applicationName
+    location             = $location
+    adminPassword        = $adminPassword
+    agentVmSize          = "Standard_D2ds_v6"
+    vmssInstanceCount    = 2
+    azureDevOpsOrgUrl    = $azureDevOpsOrgUrl
+    azureDevOpsPat       = $azureDevOpsPatPlain
+    azureDevOpsAgentPool = $azureDevOpsAgentPool
 }
 
 $paramString = $agentParams.GetEnumerator() | ForEach-Object {

@@ -3,6 +3,7 @@
 ## ✅ Completed Files
 
 ### Root Configuration
+
 - ✅ `backend.tf` - Azure Storage backend configuration
 - ✅ `backend-dev.hcl` - Dev environment backend config
 - ✅ `provider.tf` - AzureRM provider with security features
@@ -15,6 +16,7 @@
 - ✅ `README.md` - Complete documentation
 
 ### Core Module (Networking & Shared Services)
+
 - ✅ `core/main.tf` - VNet, subnets, NAT Gateway, Key Vault, Log Analytics, ACR
 - ✅ `core/variables.tf` - Module variables
 - ✅ `core/outputs.tf` - Module outputs
@@ -22,16 +24,19 @@
 ## 🔄 Remaining Modules
 
 ### IaaS Module
+
 - ⏳ `iaas/main.tf` - Web VMs, SQL VMs, Load Balancer, NSGs
 - ⏳ `iaas/variables.tf`
 - ⏳ `iaas/outputs.tf`
 
-### PaaS Module  
+### PaaS Module
+
 - ⏳ `paas/main.tf` - App Service, Azure SQL, Private Endpoints
 - ⏳ `paas/variables.tf`
 - ⏳ `paas/outputs.tf`
 
 ### Agents Module
+
 - ⏳ `agents/main.tf` - VMSS for CI/CD with Azure DevOps agent
 - ⏳ `agents/variables.tf`
 - ⏳ `agents/outputs.tf`
@@ -39,6 +44,7 @@
 ## Key Features Implemented
 
 ### Security
+
 - RBAC-enabled Key Vault with purge protection
 - Network isolation with NSGs and private endpoints
 - Managed identities for all compute resources
@@ -46,6 +52,7 @@
 - TLS 1.2+ enforcement
 
 ### Networking
+
 - Hub-spoke topology ready
 - NAT Gateway for secure outbound
 - Multiple subnet tiers (frontend, data, build agents, PE)
@@ -53,12 +60,14 @@
 - Service endpoints
 
 ### Monitoring
+
 - Log Analytics workspace
 - Application Insights
 - Diagnostic settings
 - Retention policies
 
 ### Compliance
+
 - Soft delete enabled
 - Audit logging
 - Tag enforcement

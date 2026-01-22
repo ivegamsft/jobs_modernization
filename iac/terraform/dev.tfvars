@@ -5,6 +5,7 @@
 environment      = "dev"
 application_name = "jobsite"
 location         = "swedencentral"
+subscription_id  = "844eabcc-dc96-453b-8d45-bef3d566f3f8"
 
 # Deployment toggles
 deploy_iaas   = true
@@ -30,17 +31,17 @@ vm_size     = "Standard_D2ds_v6"
 sql_vm_size = "Standard_D4ds_v6"
 
 # PaaS Configuration (when enabled)
-app_service_sku        = "S1"
-sql_database_edition   = "Standard"
-sql_service_objective  = "S1"
+app_service_sku       = "S1"
+sql_database_edition  = "Standard"
+sql_service_objective = "S1"
 
 # Agents Configuration (when enabled)
-agent_vm_size        = "Standard_D2ds_v6"
-vmss_instance_count  = 2
+agent_vm_size       = "Standard_D2ds_v6"
+vmss_instance_count = 2
 
 # Tags
 tags = {
-  CostCenter  = "Engineering"
-  Owner       = "DevOps Team"
-  Project     = "JobSite Modernization"
+  CostCenter = "Engineering"
+  Owner      = "DevOps Team"
+  Project    = "JobSite Modernization"
 }

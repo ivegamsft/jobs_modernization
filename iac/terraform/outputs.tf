@@ -122,11 +122,11 @@ output "agents_resource_group_name" {
 output "deployment_summary" {
   description = "Summary of deployed components"
   value = {
-    environment      = var.environment
-    location         = var.location
-    core_deployed    = true
-    iaas_deployed    = var.deploy_iaas
-    paas_deployed    = var.deploy_paas
-    agents_deployed  = var.deploy_agents
+    environment     = var.environment
+    location        = var.location
+    core_deployed   = true
+    iaas_deployed   = var.deploy_iaas
+    paas_deployed   = var.deploy_paas
+    agents_deployed = var.deploy_agents
   }
 }
