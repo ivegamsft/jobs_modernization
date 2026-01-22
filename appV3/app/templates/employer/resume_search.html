@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Search Resumes - {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">
+    <i class="bi bi-search me-2"></i>Search Resumes
+</h1>
+
+<!-- Search Form -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-5">
+                <input type="text" class="form-control" name="keyword" value="{{ keyword }}" 
+                       placeholder="Job title or keyword">
+            </div>
+            <div class="col-md-4">
+                <input type="text" class="form-control" name="city" value="{{ city }}" 
+                       placeholder="City">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search me-2"></i>Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results -->
+{% if resumes.items %}
+<div class="row">
+    {% for resume in resumes.items %}
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">{{ resume.job_title }}</h5>
+                <p class="text-muted mb-2">
+                    <i class="bi bi-geo-alt me-1"></i>{{ resume.target_location }}
+                </p>
+                {% if resume.education_level %}
+                <p class="text-muted mb-2">
+                    <i class="bi bi-mortarboard me-1"></i>{{ resume.education_level.education_level_name }}
+                </p>
+                {% endif %}
+                {% if resume.experience_level %}
+                <p class="text-muted mb-2">
+                    <i class="bi bi-briefcase me-1"></i>{{ resume.experience_level.experience_level_name }}
+                </p>
+                {% endif %}
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <small class="text-muted">
+                        <i class="bi bi-clock me-1"></i>{{ resume.post_date.strftime('%b %d, %Y') }}
+                    </small>
+                    <a href="{{ url_for('employer.view_resume', id=resume.id) }}" class="btn btn-sm btn-outline-primary">
+                        View Resume
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if resumes.pages > 1 %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if resumes.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('employer.resume_search', page=resumes.prev_num, keyword=keyword, city=city) }}">Previous</a>
+        </li>
+        {% endif %}
+        
+        {% for page_num in resumes.iter_pages() %}
+            {% if page_num %}
+                <li class="page-item {{ 'active' if page_num == resumes.page else '' }}">
+                    <a class="page-link" href="{{ url_for('employer.resume_search', page=page_num, keyword=keyword, city=city) }}">{{ page_num }}</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if resumes.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('employer.resume_search', page=resumes.next_num, keyword=keyword, city=city) }}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i>
+    {% if keyword or city %}
+        No resumes found matching your criteria. Try adjusting your search.
+    {% else %}
+        Search for resumes by entering a job title or city above.
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

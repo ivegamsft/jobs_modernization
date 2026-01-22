@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Experience Levels - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-bar-chart me-2"></i>Experience Levels</h1>
+    <a href="{{ url_for('admin.create_experience_level') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i>Add New
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        {% if levels %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for level in levels %}
+                    <tr>
+                        <td>{{ level.id }}</td>
+                        <td>{{ level.experience_level_name }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('admin.edit_experience_level', id=level.id) }}" 
+                                   class="btn btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form action="{{ url_for('admin.delete_experience_level', id=level.id) }}" 
+                                      method="POST" class="d-inline"
+                                      onsubmit="return confirm('Are you sure?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No experience levels defined yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+    </a>
+</div>
+{% endblock %}

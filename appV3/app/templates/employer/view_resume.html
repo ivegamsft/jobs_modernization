@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}{{ resume.job_title }} - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('employer.resume_search') }}">Resume Search</a></li>
+                <li class="breadcrumb-item active">{{ resume.job_title }}</li>
+            </ol>
+        </nav>
+        
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h1 class="h2">{{ resume.job_title }}</h1>
+                        <p class="text-muted mb-0">
+                            <i class="bi bi-geo-alt me-1"></i>{{ resume.target_location }}
+                        </p>
+                    </div>
+                    <form action="{{ url_for('employer.add_favorite_resume', resume_id=resume.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="bi bi-heart me-2"></i>Save to Favorites
+                        </button>
+                    </form>
+                </div>
+                
+                <hr>
+                
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <h6 class="text-muted">Education Level</h6>
+                        <p>{{ resume.education_level.education_level_name if resume.education_level else 'Not specified' }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-muted">Experience Level</h6>
+                        <p>{{ resume.experience_level.experience_level_name if resume.experience_level else 'Not specified' }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-muted">Preferred Job Type</h6>
+                        <p>{{ resume.target_job_type.job_type_name if resume.target_job_type else 'Any' }}</p>
+                    </div>
+                </div>
+                
+                {% if resume.resume_text %}
+                <div class="mb-4">
+                    <h5><i class="bi bi-file-text me-2"></i>Resume</h5>
+                    <div class="bg-light p-3 rounded">
+                        {{ resume.resume_text | safe }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if resume.cover_letter_text %}
+                <div class="mb-4">
+                    <h5><i class="bi bi-envelope me-2"></i>Cover Letter</h5>
+                    <div class="bg-light p-3 rounded">
+                        {{ resume.cover_letter_text | safe }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('employer.resume_search') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Search
+                    </a>
+                    <small class="text-muted">
+                        Posted: {{ resume.post_date.strftime('%B %d, %Y') }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

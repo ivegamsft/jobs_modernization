@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}About Us - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h1 class="mb-4">About {{ app_name }}</h1>
+        
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h3>Our Mission</h3>
+                <p class="lead">
+                    We connect talented professionals with great companies, making the job search 
+                    process simpler and more effective for everyone.
+                </p>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h3>What We Offer</h3>
+                <div class="row mt-4">
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex">
+                            <i class="bi bi-search fs-3 text-primary me-3"></i>
+                            <div>
+                                <h5>Easy Job Search</h5>
+                                <p class="text-muted">Find jobs that match your skills and preferences.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex">
+                            <i class="bi bi-file-earmark-text fs-3 text-primary me-3"></i>
+                            <div>
+                                <h5>Resume Builder</h5>
+                                <p class="text-muted">Create and manage your professional resume.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex">
+                            <i class="bi bi-building fs-3 text-primary me-3"></i>
+                            <div>
+                                <h5>Company Profiles</h5>
+                                <p class="text-muted">Learn about companies before you apply.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex">
+                            <i class="bi bi-bell fs-3 text-primary me-3"></i>
+                            <div>
+                                <h5>Job Alerts</h5>
+                                <p class="text-muted">Get notified about new opportunities.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center">
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">
+                Join Us Today
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}My Resume - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h1 class="mb-4">
+            <i class="bi bi-file-earmark-person me-2"></i>My Resume
+        </h1>
+        
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <h5 class="mb-3">Basic Information</h5>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.job_title.label.text }} <span class="text-danger">*</span></label>
+                        {{ form.job_title(class="form-control" + (" is-invalid" if form.job_title.errors else ""), placeholder="e.g., Software Engineer, Marketing Manager") }}
+                        {% for error in form.job_title.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">{{ form.education_level_id.label.text }}</label>
+                            {{ form.education_level_id(class="form-select") }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">{{ form.experience_level_id.label.text }}</label>
+                            {{ form.experience_level_id(class="form-select") }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">{{ form.target_job_type_id.label.text }}</label>
+                            {{ form.target_job_type_id(class="form-select") }}
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    <h5 class="mb-3">Target Location</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">{{ form.target_city.label.text }}</label>
+                            {{ form.target_city(class="form-control") }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">{{ form.target_state_id.label.text }}</label>
+                            {{ form.target_state_id(class="form-select") }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">{{ form.target_country_id.label.text }}</label>
+                            {{ form.target_country_id(class="form-select") }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.relocation_country_id.label.text }}</label>
+                        {{ form.relocation_country_id(class="form-select") }}
+                    </div>
+                    
+                    <hr class="my-4">
+                    <h5 class="mb-3">Resume Content</h5>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.resume_text.label.text }}</label>
+                        {{ form.resume_text(class="form-control", rows="10", placeholder="Enter your work experience, skills, education, and other relevant information...") }}
+                        <small class="text-muted">Include your work experience, skills, education, certifications, and other qualifications.</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.cover_letter_text.label.text }}</label>
+                        {{ form.cover_letter_text(class="form-control", rows="6", placeholder="Write a general cover letter that introduces yourself...") }}
+                        <small class="text-muted">A general introduction that employers will see when viewing your profile.</small>
+                    </div>
+                    
+                    <hr class="my-4">
+                    <h5 class="mb-3">Visibility</h5>
+                    
+                    <div class="mb-3 form-check">
+                        {{ form.is_searchable(class="form-check-input") }}
+                        <label class="form-check-label">{{ form.is_searchable.label.text }}</label>
+                        <small class="d-block text-muted">When enabled, employers can find your resume through search.</small>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-2"></i>Save Resume
+                        </button>
+                        <a href="{{ url_for('jobseeker.dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

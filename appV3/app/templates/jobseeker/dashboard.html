@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Job Seeker Dashboard - {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">
+    <i class="bi bi-speedometer2 me-2"></i>My Dashboard
+</h1>
+
+<div class="row mb-4">
+    <!-- Resume Card -->
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-file-earmark-person text-primary me-2"></i>My Resume
+                </h5>
+                {% if resume %}
+                    <h4>{{ resume.job_title }}</h4>
+                    <p class="text-muted">{{ resume.target_location }}</p>
+                    <p>
+                        {% if resume.is_searchable %}
+                            <span class="badge bg-success">Searchable</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Hidden</span>
+                        {% endif %}
+                    </p>
+                    <a href="{{ url_for('jobseeker.resume') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil me-2"></i>Edit Resume
+                    </a>
+                {% else %}
+                    <p class="text-muted">You haven't created a resume yet.</p>
+                    <a href="{{ url_for('jobseeker.resume') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-2"></i>Create Resume
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Saved Jobs Card -->
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-heart text-primary me-2"></i>Saved Jobs
+                </h5>
+                <h2>{{ saved_jobs_count }}</h2>
+                <p class="text-muted">Jobs saved for later</p>
+                <a href="{{ url_for('jobseeker.favorites') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-list-ul me-2"></i>View Saved Jobs
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Quick Actions</h5>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ url_for('jobseeker.job_search') }}" class="btn btn-primary">
+                        <i class="bi bi-search me-2"></i>Search Jobs
+                    </a>
+                    <a href="{{ url_for('jobseeker.resume') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-file-earmark-text me-2"></i>Update Resume
+                    </a>
+                    <a href="{{ url_for('jobseeker.favorites') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-heart me-2"></i>Saved Jobs
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recommended Jobs -->
+{% if recommended_jobs %}
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">
+            <i class="bi bi-stars me-2"></i>Recommended Jobs
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for job in recommended_jobs %}
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="card-title">{{ job.title }}</h6>
+                        <p class="text-muted mb-1">
+                            <i class="bi bi-building me-1"></i>{{ job.company.company_name }}
+                        </p>
+                        <p class="text-muted mb-2">
+                            <i class="bi bi-geo-alt me-1"></i>{{ job.location }}
+                        </p>
+                        <a href="{{ url_for('jobseeker.view_job', id=job.id) }}" class="btn btn-sm btn-outline-primary">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center mt-3">
+            <a href="{{ url_for('jobseeker.job_search') }}" class="btn btn-outline-primary">
+                View All Jobs
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

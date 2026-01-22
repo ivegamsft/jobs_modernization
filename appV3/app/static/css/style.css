@@ -1,0 +1,109 @@
+/* JobSite Custom Styles */
+
+/* General */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Card hover effects */
+.hover-shadow {
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.hover-shadow:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    transform: translateY(-2px);
+}
+
+/* Navigation */
+.navbar-brand {
+    font-weight: 600;
+}
+
+/* Forms */
+.form-label {
+    font-weight: 500;
+}
+
+/* Cards */
+.card {
+    border: none;
+    border-radius: 0.5rem;
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Tables */
+.table th {
+    font-weight: 600;
+    color: #495057;
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+}
+
+/* Buttons */
+.btn {
+    font-weight: 500;
+}
+
+/* Footer */
+footer a {
+    text-decoration: none;
+}
+
+footer a:hover {
+    color: #fff !important;
+}
+
+/* Pagination */
+.pagination .page-link {
+    color: #0d6efd;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* Hero section */
+.bg-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+}
+
+/* Text truncate for job descriptions */
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2rem;
+    }
+    
+    .btn-group-sm > .btn {
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    .navbar,
+    footer,
+    .btn {
+        display: none !important;
+    }
+}
