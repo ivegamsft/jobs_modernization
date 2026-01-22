@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.39.26.7824",
-      "templateHash": "8760907005198426525"
+      "templateHash": "6734048617719594480"
     }
   },
   "parameters": {
@@ -109,6 +109,32 @@
               "priority": 120,
               "direction": "Inbound"
             }
+          },
+          {
+            "name": "AllowWinRMHTTP",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "5985",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 130,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "AllowWinRMHTTPS",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "5986",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 140,
+              "direction": "Inbound"
+            }
           }
         ]
       }
@@ -122,7 +148,7 @@
       "properties": {
         "securityRules": [
           {
-            "name": "AllowSQLFromFrontend",
+            "name": "AllowSQLFromWebVM",
             "properties": {
               "protocol": "Tcp",
               "sourcePortRange": "*",
@@ -131,6 +157,19 @@
               "destinationAddressPrefix": "*",
               "access": "Allow",
               "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "AllowSQLFromVirtualNetwork",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "1433",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 105,
               "direction": "Inbound"
             }
           },
@@ -144,6 +183,32 @@
               "destinationAddressPrefix": "*",
               "access": "Allow",
               "priority": 110,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "AllowWinRMHTTP",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "5985",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 120,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "AllowWinRMHTTPS",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "5986",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 130,
               "direction": "Inbound"
             }
           }
@@ -180,17 +245,13 @@
               "subnet": {
                 "id": "[parameters('frontendSubnetId')]"
               },
-              "privateIPAllocationMethod": "Dynamic",
-              "applicationGatewayBackendAddressPools": [
-                {
-                  "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('appGatewayName'), 'wfe-backend-pool')]"
-                }
-              ]
+              "privateIPAllocationMethod": "Dynamic"
             }
           }
         ]
       },
       "dependsOn": [
+        "[resourceId('Microsoft.Network/applicationGateways', variables('appGatewayName'))]",
         "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgFrontendName'))]"
       ]
     },
@@ -387,7 +448,7 @@
             "name": "appGatewayIpConfig",
             "properties": {
               "subnet": {
-                "id": "[parameters('frontendSubnetId')]"
+                "id": "[parameters('dataSubnetId')]"
               }
             }
           }
