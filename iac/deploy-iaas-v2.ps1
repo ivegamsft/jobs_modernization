@@ -44,6 +44,7 @@ $coreJson = az deployment sub show --name "jobsite-core-dev" -o json
 $coreOutputs = $coreJson | ConvertFrom-Json
 $feSubnet = $coreOutputs.properties.outputs.frontendSubnetId.value
 $dataSubnet = $coreOutputs.properties.outputs.dataSubnetId.value
+$githubRunnersSubnet = $coreOutputs.properties.outputs.githubRunnersSubnetId.value
 $kvName = $coreOutputs.properties.outputs.keyVaultName.value
 Write-Host "   ✅ Outputs retrieved" -ForegroundColor Green
 Write-Host ""
@@ -85,11 +86,12 @@ $params = @{
         location = @{ value = 'swedencentral' }
         frontendSubnetId = @{ value = $feSubnet }
         dataSubnetId = @{ value = $dataSubnet }
+        githubRunnersSubnetId = @{ value = $githubRunnersSubnet }
         adminUsername = @{ value = 'azureadmin' }
         adminPassword = @{ value = $vmPassword }
-        vmSize = @{ value = 'Standard_D2s_v4' }
+        vmSize = @{ value = 'Standard_D2ds_v6' }
         vmssInstanceCount = @{ value = 2 }
-        sqlVmSize = @{ value = 'Standard_D4s_v4' }
+        sqlVmSize = @{ value = 'Standard_D4ds_v6' }
         appGatewayCertData = @{ value = $certB64 }
         appGatewayCertPassword = @{ value = $certPassword }
     }

@@ -3,6 +3,7 @@
 ## Status Summary
 
 ### ✅ Completed
+
 - **Core Infrastructure** - Fully deployed and tested
   - Location: eastus
   - Resource Group: jobsite-core-dev-rg
@@ -10,12 +11,14 @@
   - Status: Succeeded
 
 ### ⏸️ IAAS Infrastructure - Ready to Deploy
+
 - Bicep template validated
 - Strong passwords generated
 - Certificate ready
 - Awaiting deployment (Azure CLI issue being resolved)
 
 ### ⏹️ PaaS Infrastructure
+
 - Prepared
 - Awaiting IAAS completion
 
@@ -122,17 +125,20 @@ CORE ✅ (Done)
 If you continue to see "content already consumed" error:
 
 ### Workaround 1: Use Portal (Recommended)
+
 - Use Method 1 above
 - No CLI required
 - User-friendly interface
 
 ### Workaround 2: Update Azure CLI
+
 ```powershell
 az upgrade
 # Then retry deployment
 ```
 
 ### Workaround 3: Check Session
+
 ```powershell
 az account show
 az version
@@ -142,6 +148,7 @@ az login
 ```
 
 ### Workaround 4: Use Bicep CLI
+
 ```powershell
 # Compile to ARM template
 bicep build iac/bicep/iaas/main.bicep
@@ -158,15 +165,15 @@ az deployment sub create `
 
 ## 📁 Key Files
 
-| File | Purpose | Status |
-|------|---------|--------|
-| `iac/bicep/core/main.bicep` | Core infrastructure | ✅ Done |
-| `iac/bicep/iaas/main.bicep` | IAAS infrastructure | ⏸️ Ready |
-| `iac/bicep/paas/main.bicep` | PaaS infrastructure | ⏹️ Prepared |
-| `iac/deploy-iaas-clean.ps1` | Deploy script | ✅ Tested |
-| `iac/get-credentials.ps1` | Retrieve credentials | ✅ Ready |
-| `iac/diagnose.ps1` | Troubleshoot CLI | ✅ Ready |
-| `DEPLOYMENT_STATUS.md` | Full documentation | ✅ Updated |
+| File                        | Purpose              | Status      |
+| --------------------------- | -------------------- | ----------- |
+| `iac/bicep/core/main.bicep` | Core infrastructure  | ✅ Done     |
+| `iac/bicep/iaas/main.bicep` | IAAS infrastructure  | ⏸️ Ready    |
+| `iac/bicep/paas/main.bicep` | PaaS infrastructure  | ⏹️ Prepared |
+| `iac/deploy-iaas-clean.ps1` | Deploy script        | ✅ Tested   |
+| `iac/get-credentials.ps1`   | Retrieve credentials | ✅ Ready    |
+| `iac/diagnose.ps1`          | Troubleshoot CLI     | ✅ Ready    |
+| `DEPLOYMENT_STATUS.md`      | Full documentation   | ✅ Updated  |
 
 ---
 
@@ -205,6 +212,7 @@ az keyvault secret show `
 ## 📞 Support
 
 For issues:
+
 1. Run `pwsh -File iac/diagnose.ps1`
 2. Check Azure Portal → Deployments
 3. Review error messages in Activity Log

@@ -9,7 +9,7 @@ targetScope = 'subscription'
 param environment string = 'dev'
 param applicationName string = 'jobsite'
 param location string = 'swedencentral'
-param vnetAddressPrefix string = '10.50.0.0/24'
+param vnetAddressPrefix string = '10.50.0.0/21'
 param sqlAdminUsername string = 'jobsiteadmin'
 @secure()
 param sqlAdminPassword string = newGuid()

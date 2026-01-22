@@ -9,6 +9,7 @@ param applicationName string
 param location string
 param frontendSubnetId string
 param dataSubnetId string
+param githubRunnersSubnetId string
 param adminUsername string
 param vmSize string
 param vmssInstanceCount int
@@ -96,7 +97,7 @@ resource vmss 'Microsoft.Compute/virtualMachineScaleSets@2023-09-01' = {
                   name: 'ipconfig1'
                   properties: {
                     subnet: {
-                      id: dataSubnetId
+                      id: githubRunnersSubnetId
                     }
                     applicationGatewayBackendAddressPools: [
                       {

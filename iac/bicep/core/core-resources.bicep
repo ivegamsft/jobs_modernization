@@ -17,35 +17,37 @@ param tags object
 var uniqueSuffix = uniqueString(resourceGroup().id)
 var resourcePrefix = '${applicationName}-${environment}'
 
-// Subnet configuration
+// Subnet Configuration - Production Ready Sizing
+// VNet: 10.50.0.0/21 (2,048 IPs)
+// Design: Follows Azure best practices with room for growth
 var subnetConfig = {
   frontend: {
     name: 'snet-fe'
-    prefix: '10.50.0.0/27'
+    prefix: '10.50.0.0/24' // App Gateway v2: 251 usable IPs (Microsoft recommendation)
   }
   data: {
     name: 'snet-data'
-    prefix: '10.50.0.32/27'
-  }
-  vpnGateway: {
-    name: 'GatewaySubnet'
-    prefix: '10.50.0.64/27'
-  }
-  privateEndpoint: {
-    name: 'snet-pe'
-    prefix: '10.50.0.96/27'
+    prefix: '10.50.1.0/26' // SQL VMs: 59 usable IPs
   }
   githubRunners: {
     name: 'snet-gh-runners'
-    prefix: '10.50.0.128/27'
+    prefix: '10.50.1.64/26' // Build agents VMSS: 59 usable IPs
+  }
+  privateEndpoint: {
+    name: 'snet-pe'
+    prefix: '10.50.1.128/27' // Private Endpoints: 27 usable IPs
+  }
+  vpnGateway: {
+    name: 'GatewaySubnet'
+    prefix: '10.50.1.160/27' // VPN Gateway: 27 usable IPs (Azure recommendation)
   }
   aks: {
     name: 'snet-aks'
-    prefix: '10.50.0.160/27'
+    prefix: '10.50.2.0/23' // AKS cluster: 507 usable IPs (supports 250+ nodes)
   }
   containerApps: {
     name: 'snet-ca'
-    prefix: '10.50.0.192/27'
+    prefix: '10.50.4.0/26' // Container Apps: 59 usable IPs (12 infra + 47 scaling)
   }
 }
 
@@ -269,18 +271,6 @@ resource acrPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-11-01' = {
   name: '${acrName}-pe'
   location: location
   tags: tags
-output acrId string = acr.id
-output acrName string = acr.name
-output acrLoginServer string = acr.properties.loginServer
-output containerAppsEnvId string = containerAppsEnv.id
-output containerAppsEnvName string = containerAppsEnv.name
-output containerAppsEnvDefaultDomain string = containerAppsEnv.properties.defaultDomain
-output containerAppsEnvStaticIp string = containerAppsEnv.properties.staticIp
-output containerAppsSubnetId string = resourceId(
-  'Microsoft.Network/virtualNetworks/subnets',
-  vnet.name,
-  subnetConfig.containerApps.name
-)
   properties: {
     subnet: {
       id: resourceId('Microsoft.Network/virtualNetworks/subnets', vnet.name, subnetConfig.privateEndpoint.name)
@@ -395,6 +385,11 @@ output frontendSubnetId string = resourceId(
   subnetConfig.frontend.name
 )
 output dataSubnetId string = resourceId('Microsoft.Network/virtualNetworks/subnets', vnet.name, subnetConfig.data.name)
+output githubRunnersSubnetId string = resourceId(
+  'Microsoft.Network/virtualNetworks/subnets',
+  vnet.name,
+  subnetConfig.githubRunners.name
+)
 output peSubnetId string = resourceId(
   'Microsoft.Network/virtualNetworks/subnets',
   vnet.name,
@@ -407,3 +402,15 @@ output privateDnsZoneName string = privateDnsZone.name
 output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.id
 output logAnalyticsWorkspaceName string = logAnalyticsWorkspace.name
 output natGatewayPublicIp string = publicIpNat.properties.ipAddress
+output acrId string = acr.id
+output acrName string = acr.name
+output acrLoginServer string = acr.properties.loginServer
+output containerAppsEnvId string = containerAppsEnv.id
+output containerAppsEnvName string = containerAppsEnv.name
+output containerAppsEnvDefaultDomain string = containerAppsEnv.properties.defaultDomain
+output containerAppsEnvStaticIp string = containerAppsEnv.properties.staticIp
+output containerAppsSubnetId string = resourceId(
+  'Microsoft.Network/virtualNetworks/subnets',
+  vnet.name,
+  subnetConfig.containerApps.name
+)

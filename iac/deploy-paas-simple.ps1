@@ -11,17 +11,10 @@ $coreOutputs = az deployment sub show --name "jobsite-core-dev" --query "propert
 
 $peSubnetId = $coreOutputs.peSubnetId.value
 $logAnalyticsWorkspaceId = $coreOutputs.logAnalyticsWorkspaceId.value
-$logAnalyticsWorkspaceName = $coreOutputs.logAnalyticsWorkspaceName.value
 $keyVaultName = $coreOutputs.keyVaultName.value
-$vnetName = $coreOutputs.vnetName.value
 $coreRgName = $coreOutputs.resourceGroupName.value
 
-# Get container apps subnet ID
-$containerAppSubnetId = az network vnet subnet show --resource-group $coreRgName --vnet-name $vnetName --name "snet-ca" --query "id" -o tsv
-
 Write-Host "  Key Vault: $keyVaultName" -ForegroundColor Gray
-Write-Host "  VNet: $vnetName" -ForegroundColor Gray
-Write-Host "  Container Apps Subnet: $containerAppSubnetId" -ForegroundColor Gray
 Write-Host ""
 
 # Get current user for SQL AAD admin
@@ -51,8 +44,6 @@ az deployment sub create `
     --parameters resourceGroupName=$resourceGroupName `
     --parameters peSubnetId=$peSubnetId `
     --parameters logAnalyticsWorkspaceId=$logAnalyticsWorkspaceId `
-    --parameters logAnalyticsWorkspaceName=$logAnalyticsWorkspaceName `
     --parameters coreResourceGroupName=$coreRgName `
-    --parameters containerAppSubnetId=$containerAppSubnetId `
     --parameters sqlAadAdminObjectId=$sqlAadAdminObjectId `
     --parameters sqlAadAdminName=$sqlAadAdminName

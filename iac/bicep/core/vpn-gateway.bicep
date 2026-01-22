@@ -7,7 +7,6 @@ targetScope = 'resourceGroup'
 param environment string
 param applicationName string
 param location string
-param vnetName string
 param gatewaySubnetId string
 param vpnRootCertificate string = ''
 param vpnClientAddressPool string = '172.16.0.0/24'

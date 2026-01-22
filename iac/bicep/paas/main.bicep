@@ -15,9 +15,7 @@ param sqlAadAdminObjectId string
 param sqlAadAdminName string
 param peSubnetId string
 param logAnalyticsWorkspaceId string
-param logAnalyticsWorkspaceName string
 param coreResourceGroupName string
-param containerAppSubnetId string
 param resourceGroupName string = '${applicationName}-paas-${environment}-rg'
 param tags object = {
   Application: 'JobSite'
@@ -47,9 +45,7 @@ module paasResources './paas-resources.bicep' = {
     sqlAadAdminName: sqlAadAdminName
     peSubnetId: peSubnetId
     logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
-    logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
     coreResourceGroupName: coreResourceGroupName
-    containerAppSubnetId: containerAppSubnetId
     tags: tags
   }
 }

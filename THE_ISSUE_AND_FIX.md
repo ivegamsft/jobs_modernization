@@ -5,12 +5,14 @@
 **Error**: `The content for this response was already consumed`
 
 **Why it happens**:
+
 1. Azure CLI has 2 updates available (outdated version)
 2. When passing large Base64-encoded certificate data (~8KB+) as command-line parameters
 3. urllib3 HTTP connection gets consumed during parameter parsing
 4. Deployment command fails before actually submitting to Azure
 
 ## Evidence
+
 ```
 From terminal output:
 - "The content for this response was already consumed"
@@ -22,6 +24,7 @@ From terminal output:
 ## THE FIX (3 Options)
 
 ### ✅ Option 1: Update Azure CLI (FASTEST)
+
 ```powershell
 # Update CLI to latest version
 az upgrade
@@ -31,6 +34,7 @@ pwsh -File c:\git\jobs_modernization\iac\deploy-iaas-clean.ps1
 ```
 
 ### ✅ Option 2: Deploy via Azure Portal (MOST RELIABLE)
+
 1. Go to https://portal.azure.com
 2. Search: "Deploy a custom template"
 3. Click "Build your own template in the editor"
@@ -42,6 +46,7 @@ pwsh -File c:\git\jobs_modernization\iac\deploy-iaas-clean.ps1
 7. Deploy (15-20 min)
 
 ### ✅ Option 3: Use Bicep CLI Directly
+
 ```powershell
 # Compile Bicep to ARM JSON
 bicep build c:\git\jobs_modernization\iac\bicep\iaas\main.bicep
@@ -76,16 +81,19 @@ Use Azure Portal method - it's completely independent of Azure CLI and 100% reli
 ## Technical Details
 
 **CLI Version Issue**:
+
 - Current: Outdated (2+ updates pending)
 - Bug: urllib3 connection handling in older versions
 - Fix: Latest version has improved parameter handling
 
 **Parameter Size**:
+
 - Certificate data: ~8-12KB Base64
 - CLI command line limit: varies by OS
 - Portal: No such limits
 
 **Why Portal Works**:
+
 - Uses different API path
 - Handles large data via form upload
 - No command-line parameter limits

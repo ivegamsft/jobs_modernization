@@ -178,10 +178,12 @@ Write-Host ""
 # Deployment Summary
 # ============================================================================
 
-Write-Host "═� CREDENTIALS STORED IN KEY VAULT: $keyVaultName" -ForegroundColor Yellow
+Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "CREDENTIALS STORED IN KEY VAULT: $keyVaultName" -ForegroundColor Yellow
 Write-Host "   VM Admin Username: azureadmin" -ForegroundColor White
 Write-Host "   Retrieve passwords with:" -ForegroundColor Gray
-Write-Host "   az keyvault secret show --vault-name $keyVaultName --name iaas-vm-admin-password --query value -o tsv" -ForegroundColor Gray═" -ForegroundColor Cyan
+Write-Host "   az keyvault secret show --vault-name $keyVaultName --name iaas-vm-admin-password --query value -o tsv" -ForegroundColor Gray
+Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host ""
 
 Write-Host "📋 SAVE THESE CREDENTIALS:" -ForegroundColor Yellow

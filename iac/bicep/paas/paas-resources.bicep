@@ -14,9 +14,7 @@ param sqlAadAdminObjectId string
 param sqlAadAdminName string
 param peSubnetId string
 param logAnalyticsWorkspaceId string
-param logAnalyticsWorkspaceName string
 param coreResourceGroupName string
-param containerAppSubnetId string
 param tags object
 
 // Variables
@@ -29,12 +27,6 @@ var appInsightsName = '${applicationName}-ai-${environment}'
 var privateEndpointName = '${appServiceName}-pe'
 var acrName = '${applicationName}acr${environment}${take(uniqueSuffix, 8)}'
 var containerAppEnvName = '${applicationName}-cae-${environment}'
-
-// Reference existing Log Analytics workspace
-resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' existing = {
-  name: logAnalyticsWorkspaceName
-  scope: resourceGroup(coreResourceGroupName)
-}
 
 // App Service Plan
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = {

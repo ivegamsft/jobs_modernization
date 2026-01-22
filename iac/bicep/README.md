@@ -1,399 +1,383 @@
-# Infrastructure as Code (IaC) for Legacy Job Site Application
+# Infrastructure as Code (Bicep)
 
-## Overview
+**Purpose**: Automate Azure infrastructure deployment  
+**Language**: Bicep (Azure Resource Manager templates)  
+**Status**: ✅ Production-ready (Core, IaaS, PaaS layers)
 
-This folder contains **Bicep** templates for deploying the legacy ASP.NET 2.0 Web Forms Job Site application to Azure. The templates automate creation of all required infrastructure including App Service, SQL Database, Key Vault, monitoring, and networking.
+---
 
-## File Structure
+## 📖 Quick Navigation
 
-```
-iac/
-├── main.bicep                    # Main template (orchestrates all resources)
-├── main.dev.bicepparam          # Parameters for dev environment
-├── main.staging.bicepparam      # Parameters for staging environment
-├── main.prod.bicepparam         # Parameters for production environment
-├── Deploy-Bicep.ps1             # PowerShell deployment script
-├── deploy-bicep.sh              # Bash deployment script
-└── README.md                     # This file
-```
+### 🚀 Deploy Now (5 minutes)
 
-## Architecture
+→ See [QUICK_START.md](QUICK_START.md)
 
-The Bicep template deploys the following Azure resources:
+### 📚 Understand the Design (20 minutes)
 
-```
-┌─────────────────────────────────────────────────────────┐
-│               Resource Group                             │
-├─────────────────────────────────────────────────────────┤
-│                                                          │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │  App Service (ASP.NET 2.0 Web Forms)             │  │
-│  │  - Managed Identity                              │  │
-│  │  - HTTPS enforced                                │  │
-│  │  - Application Insights integration              │  │
-│  └────────────────┬─────────────────────────────────┘  │
-│                   │                                      │
-│  ┌────────────────▼─────────────────────────────────┐  │
-│  │  App Service Plan (B2/S1/P1V2)                   │  │
-│  └──────────────────────────────────────────────────┘  │
-│                                                          │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │  SQL Server + SQL Database                       │  │
-│  │  - Encryption: TLS 1.2+                          │  │
-│  │  - Firewall rules configured                     │  │
-│  │  - Backup: Weekly (4 weeks), Monthly (12 months) │  │
-│  └──────────────────────────────────────────────────┘  │
-│                                                          │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │  Azure Key Vault                                 │  │
-│  │  - SQL connection string                         │  │
-│  │  - App Insights instrumentation key              │  │
-│  │  - Access via Managed Identity                   │  │
-│  └──────────────────────────────────────────────────┘  │
-│                                                          │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │  Monitoring & Diagnostics                        │  │
-│  │  - Log Analytics Workspace                       │  │
-│  │  - Application Insights                          │  │
-│  │  - Diagnostic Settings (App, SQL, KV)            │  │
-│  └──────────────────────────────────────────────────┘  │
-│                                                          │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │  Storage Account                                 │  │
-│  │  - Diagnostics logging                           │  │
-│  │  - Blob storage for backups/uploads              │  │
-│  └──────────────────────────────────────────────────┘  │
-│                                                          │
-└─────────────────────────────────────────────────────────┘
-```
+→ Read [../NETWORK_REDESIGN.md](../NETWORK_REDESIGN.md)  
+→ Then [../../specs/001-network-redesign/plan.md](../../specs/001-network-redesign/plan.md)
 
-## Environment Configurations
+### 🔍 Detailed Reference
 
-### Development
+→ Use [QUICK_REFERENCE_CARD.md](QUICK_REFERENCE_CARD.md) - Commands to print
+→ Or [INDEX.md](INDEX.md) - Complete file listing
 
-- **App Service**: B2 (2 cores, 3.5 GB RAM)
-- **SQL Database**: Standard (S0 - 10 DTUs)
-- **Cost**: ~$80-100/month
-- **Purpose**: Development and testing
+---
 
-### Staging
+## 🏗️ Architecture
 
-- **App Service**: S1 (1 core, 1.75 GB RAM)
-- **SQL Database**: Standard (S1 - 20 DTUs)
-- **Cost**: ~$120-150/month
-- **Purpose**: Pre-production testing
+The infrastructure is deployed in **3 layers**:
 
-### Production
+### Layer 1: Core (Networking & Shared Services)
 
-- **App Service**: P1V2 (2 cores, 3.5 GB RAM, always-on)
-- **SQL Database**: Premium (P2 - 250 DTUs)
-- **Cost**: ~$400-500/month
-- **Purpose**: Production workloads with HA and auto-scale
+**Files**: `core/main.bicep`, `core/core-resources.bicep`
 
-## Prerequisites
+**Creates**:
 
-### Required
+- Virtual Network (10.50.0.0/21) - 2,048 IPs
+- 7 subnets (frontend, data, PE, build agents, AKS, Container Apps, Gateway)
+- Key Vault (secrets management)
+- Log Analytics Workspace (monitoring)
+- Azure Container Registry (container images)
+- Container App Environment (serverless containers)
+- Private DNS Zone (internal service discovery)
+- NAT Gateway (outbound traffic control)
 
-- [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) or [Azure PowerShell](https://docs.microsoft.com/en-us/powershell/azure/install-az-ps)
-- Azure subscription with contributor role
-- Logged in to Azure (`az login` or `Connect-AzAccount`)
+**Deployment Time**: ~2-3 minutes  
+**Cost Impact**: ~$30-50/month
 
-### Optional
+### Layer 2: IaaS (Virtual Machines & Networking)
 
-- Git for version control
-- Visual Studio Code with Bicep extension for editing
+**Files**: `iaas/main.bicep`, `iaas/iaas-resources.bicep`
 
-## Quick Start
+**Creates**:
 
-### Option 1: PowerShell (Windows)
+- VMSS (Web/App tier) - D2ds_v6 instances
+- SQL Server VM - D4ds_v6
+- Application Gateway (WAF v2)
+- Network interfaces & IPs
+- Managed Identities (for secure access)
+- Extensions (monitoring, security)
+
+**Deployment Time**: ~5-10 minutes  
+**Cost Impact**: ~$200-400/month
+
+### Layer 3: PaaS (App Services & Databases)
+
+**Files**: `paas/main.bicep`, `paas/paas-resources.bicep`
+
+**Creates**:
+
+- App Service (ASP.NET Core hosting)
+- SQL Database (managed database)
+- Application Insights (APM)
+- Private Endpoints (for secure access)
+
+**Deployment Time**: ~5-10 minutes  
+**Cost Impact**: ~$50-150/month
+
+---
+
+## 🚀 Deployment Guide
+
+### Quick Start (5 minutes)
 
 ```powershell
-# Deploy to development
-./Deploy-Bicep.ps1 -Environment dev -ResourceGroupName jobsite-dev-rg
+# 1. Prerequisites
+az --version          # Azure CLI 2.50+
+bicep version         # Bicep CLI 0.26+
 
-# Deploy to staging
-./Deploy-Bicep.ps1 -Environment staging -ResourceGroupName jobsite-staging-rg
+# 2. Configure parameters
+code core/parameters.bicepparam
+# Edit: location, sqlAdminPassword, etc.
 
-# Deploy to production
-./Deploy-Bicep.ps1 -Environment prod -ResourceGroupName jobsite-prod-rg -Location "westus2"
+# 3. Deploy Core layer
+az deployment group create `
+  --name jobsite-core-prod `
+  --resource-group jobsite-core-rg `
+  --template-file core/main.bicep `
+  --parameters @core/parameters.bicepparam
 
-# Validate without deploying (WhatIf mode)
-./Deploy-Bicep.ps1 -Environment dev -ResourceGroupName jobsite-dev-rg -WhatIf
+# 4. Get outputs (needed for next layers)
+az deployment group show `
+  --resource-group jobsite-core-rg `
+  --name jobsite-core-prod `
+  --query properties.outputs
+
+# 5. Continue with IaaS and PaaS layers
+# (See QUICK_START.md for complete steps)
 ```
 
-### Option 2: Bash (Linux/macOS)
+### Full Details
 
-```bash
-# Deploy to development
-./deploy-bicep.sh dev jobsite-dev-rg
+See [QUICK_START.md](QUICK_START.md) for:
 
-# Deploy to staging
-./deploy-bicep.sh staging jobsite-staging-rg eastus
+- Complete prerequisite checklist
+- Step-by-step deployment for all 3 layers
+- How to get outputs from each layer
+- Validation commands
 
-# Deploy to production
-./deploy-bicep.sh prod jobsite-prod-rg westus2
+### Reference
+
+See [QUICK_REFERENCE_CARD.md](QUICK_REFERENCE_CARD.md) for:
+
+- One-page command reference (printable)
+- Pre-deployment checklist
+- Post-deployment validation
+- Common troubleshooting
+
+---
+
+## 📂 File Structure
+
+```
+iac/bicep/
+│
+├── README.md                           ← This file
+├── QUICK_START.md                      ← Deployment guide (5 min)
+├── QUICK_REFERENCE_CARD.md             ← Printable commands
+├── INDEX.md                            ← Complete file listing
+│
+├── core/                               ← Layer 1: Networking
+│   ├── main.bicep
+│   ├── core-resources.bicep
+│   ├── parameters.bicepparam
+│   └── [networking, KV, monitoring modules]
+│
+├── iaas/                               ← Layer 2: VMs
+│   ├── main.bicep
+│   ├── iaas-resources.bicep
+│   ├── parameters.bicepparam
+│   └── [VMSS, SQL, App Gateway modules]
+│
+├── paas/                               ← Layer 3: App Services
+│   ├── main.bicep
+│   ├── paas-resources.bicep
+│   ├── parameters.bicepparam
+│   └── [App Service, SQL DB, App Insights modules]
+│
+└── scripts/                            ← Deployment scripts
+    ├── deploy-core.ps1
+    ├── deploy-iaas.ps1
+    ├── deploy-paas.ps1
+    └── get-outputs.ps1
 ```
 
-### Option 3: Azure CLI Direct
+---
 
-```bash
+## 🔧 Configuration
+
+### Key Parameters
+
+Each layer uses a `.bicepparam` file:
+
+```bicep
+// Example: parameters.bicepparam
+param location = 'swedencentral'
+param environment = 'prod'
+param vnetAddressPrefix = '10.50.0.0/21'
+param sqlAdminPassword = 'CHANGE_ME_STRONG_PASSWORD'
+param vmSize = 'Standard_D2ds_v6'
+```
+
+### Environment-Specific Parameters
+
+Pre-configured parameter files exist:
+
+- `parameters-dev.bicepparam` - Development (smaller SKUs)
+- `parameters-staging.bicepparam` - Staging (medium SKUs)
+- `parameters-prod.bicepparam` - Production (full SKUs)
+
+---
+
+## ✅ Deployment Checklist
+
+### Before Deploying
+
+- [ ] Azure subscription created and selected
+- [ ] Azure CLI 2.50+ installed
+- [ ] Bicep CLI 0.26+ installed
+- [ ] Resource group exists
+- [ ] Parameter file reviewed and updated
+- [ ] All passwords are strong (15+ chars, mixed case, numbers, symbols)
+- [ ] Region selected and has capacity for your SKU
+
+### During Deployment
+
+- [ ] Watch deployment progress
+- [ ] Note any warnings (usually safe to ignore)
+- [ ] Save outputs for next layer
+
+### After Deployment
+
+- [ ] All resources created successfully
+- [ ] Validate with QUICK_REFERENCE_CARD.md commands
+- [ ] Test connectivity to all tiers
+- [ ] Check monitoring (Log Analytics, App Insights)
+- [ ] Verify security (RBAC, Key Vault access)
+
+---
+
+## 📊 Infrastructure Details
+
+### Network Architecture
+
+| Subnet          | CIDR           | Purpose                | IPs |
+| --------------- | -------------- | ---------------------- | --- |
+| snet-fe         | 10.50.0.0/24   | Frontend / App Gateway | 251 |
+| snet-data       | 10.50.1.0/26   | SQL VMs                | 61  |
+| snet-gh-runners | 10.50.1.64/26  | Build agents (VMSS)    | 61  |
+| snet-pe         | 10.50.1.128/27 | Private Endpoints      | 29  |
+| GatewaySubnet   | 10.50.1.160/27 | VPN Gateway            | 29  |
+| snet-aks        | 10.50.2.0/23   | AKS cluster            | 507 |
+| snet-ca         | 10.50.4.0/26   | Container Apps         | 61  |
+| Reserved        | 10.50.4.64+    | Future growth          | 896 |
+
+**Total**: 2,048 IPs (56% used, 44% reserved)
+
+### Security Configuration
+
+✅ **Network**:
+
+- Network Security Groups (NSGs) on all subnets
+- Private Endpoints for Key Vault, SQL, Storage
+- Private DNS zone for internal routing
+
+✅ **Access Control**:
+
+- RBAC with least privilege
+- Managed Identities for VM access
+- Service Principals for automation
+
+✅ **Data Protection**:
+
+- Encryption at rest (Storage, SQL, Key Vault)
+- Encryption in transit (HTTPS, TLS 1.2+)
+- All credentials in Key Vault
+- No hardcoded secrets
+
+✅ **Monitoring**:
+
+- Log Analytics Workspace
+- Application Insights
+- Microsoft Defender for Cloud
+- Diagnostic settings on all resources
+
+---
+
+## 🛠️ Common Tasks
+
+### Deploy All 3 Layers
+
+```powershell
+# 1. Deploy Core
+./scripts/deploy-core.ps1
+
+# 2. Get Core outputs
+./scripts/get-outputs.ps1 -ResourceGroup jobsite-core-rg
+
+# 3. Deploy IaaS (using Core outputs)
+./scripts/deploy-iaas.ps1
+
+# 4. Deploy PaaS (using Core outputs)
+./scripts/deploy-paas.ps1
+
+# 5. Validate
+az deployment group list --resource-group jobsite-core-rg
+```
+
+### Update a Specific Resource
+
+```powershell
+# Update just the VMSS (keep other resources)
 az deployment group create \
-  --name jobsite-deploy-dev \
-  --resource-group jobsite-dev-rg \
-  --template-file main.bicep \
-  --parameters main.dev.bicepparam
-
-# Validate first
-az deployment group validate \
-  --resource-group jobsite-dev-rg \
-  --template-file main.bicep \
-  --parameters main.dev.bicepparam
+  --name iaas-update \
+  --resource-group jobsite-iaas-rg \
+  --template-file iaas/main.bicep \
+  --parameters @iaas/parameters.bicepparam
 ```
 
-## Parameters
-
-Edit the relevant `main.*.bicepparam` file to customize deployment:
-
-```bicepparam
-param environment = 'dev'                    # Environment name (dev/staging/prod)
-param applicationName = 'jobsite'            # Application name (used in resource names)
-param location = 'eastus'                    # Azure region
-param appServiceSku = 'B2'                   # App Service Plan SKU
-param sqlDatabaseEdition = 'Standard'        # SQL Database Edition (Standard/Premium)
-param sqlServiceObjective = 'S0'             # SQL Service Objective (S0/S1/S2/P1/P2)
-param sqlAdminUsername = 'sqladmin'          # SQL admin username (⚠️ Change this!)
-param sqlAdminPassword = 'ChangeMe@12345678' # SQL admin password (⚠️ Change this!)
-param alertEmail = 'your-email@company.com'  # Email for alerts
-```
-
-⚠️ **IMPORTANT**: Change the SQL credentials before deploying to production!
-
-## Resource Names
-
-Resources are created with unique names to avoid conflicts:
-
-```
-jobsite-app-{environment}-{unique-suffix}       # App Service
-jobsite-asp-{environment}                       # App Service Plan
-jobsite-sql-{environment}-{unique-suffix}       # SQL Server
-jobsite-kv-{environment}-{unique-suffix}        # Key Vault
-jobsite-ai-{environment}                        # Application Insights
-jobsitesa{environment}{unique-suffix}           # Storage Account
-jobsite-law-{environment}                       # Log Analytics Workspace
-```
-
-## Security Features
-
-✅ **Enabled**
-
-- TLS 1.2+ for all connections
-- HTTPS enforced on App Service
-- SQL Server firewall rules
-- Azure Key Vault for secrets management
-- Managed Identity for secure credential access
-- Application Insights monitoring
-- Log Analytics for audit trails
-- Encryption enabled on storage
-
-⚠️ **To Configure**
-
-- Firewall rules (update IP ranges in bicep file)
-- Key Vault access policies
-- Network service endpoints
-- Private endpoints (for higher security)
-- Azure WAF (Web Application Firewall)
-
-## Deployment Outputs
-
-After successful deployment, you'll receive:
-
-- App Service URL (e.g., `https://jobsite-app-dev-xxxxx.azurewebsites.net`)
-- SQL Server FQDN
-- SQL Database name
-- Key Vault name
-- Application Insights name
-
-## Post-Deployment Steps
-
-### 1. Deploy Application Package
+### Check Deployment Status
 
 ```powershell
-# Create deployment package
-Compress-Archive -Path C:\path\to\application\* -DestinationPath app.zip
+# View recent deployments
+az deployment group list --resource-group jobsite-core-rg
 
-# Deploy to App Service
-az webapp deployment source config-zip `
-  --resource-group jobsite-dev-rg `
-  --name jobsite-app-dev-xxxxx `
-  --src app.zip
+# View specific deployment
+az deployment group show \
+  --name jobsite-core-prod \
+  --resource-group jobsite-core-rg
+
+# View any errors
+az deployment group show \
+  --name jobsite-core-prod \
+  --resource-group jobsite-core-rg \
+  --query properties.provisioningState
 ```
 
-### 2. Update web.config
+---
 
-After deployment, update your `web.config`:
+## 🔗 Related Documentation
 
-```xml
-<!-- 1. Connection string from Key Vault -->
-<add name="connectionstring"
-     connectionString="Server=tcp:jobsite-sql-dev-xxxxx.database.windows.net,1433;
-                       Initial Catalog=jobsitedb;
-                       Persist Security Info=False;
-                       User ID=sqladmin;
-                       Password=YourPassword;
-                       Encrypt=True;
-                       TrustServerCertificate=False;
-                       Connection Timeout=30;" />
+### Infrastructure Design
 
-<!-- 2. Enable Application Insights monitoring -->
-<system.webServer>
-  <modules>
-    <add name="ApplicationInsightsWebTracking"
-         type="Microsoft.ApplicationInsights.Web.ApplicationInsightsModule, Microsoft.AI.Web" />
-  </modules>
-</system.webServer>
+- [../../specs/001-network-redesign/plan.md](../../specs/001-network-redesign/plan.md) - Architecture decisions
+- [../../specs/001-network-redesign/spec.md](../../specs/001-network-redesign/spec.md) - Network requirements
+- [../../specs/001-network-redesign/tasks.md](../../specs/001-network-redesign/tasks.md) - Deployment tasks
 
-<!-- 3. Security settings -->
-<compilation debug="false" targetFramework="4.8" />
-<customErrors mode="RemoteOnly" defaultRedirect="error500.aspx" />
-<httpRuntime targetFramework="4.8" enableVersionHeader="false" />
-```
+### Deployment & Operations
 
-### 3. Test Connectivity
+- [QUICK_START.md](QUICK_START.md) - Step-by-step deployment
+- [QUICK_REFERENCE_CARD.md](QUICK_REFERENCE_CARD.md) - Printable commands
+- [../NETWORK_REDESIGN.md](../NETWORK_REDESIGN.md) - Migration guide
 
-```powershell
-# Test SQL connection
-sqlcmd -S jobsite-sql-dev-xxxxx.database.windows.net -U sqladmin -P YourPassword -d jobsitedb -Q "SELECT 1"
+### Application Deployment
 
-# Verify App Service
-$url = "https://jobsite-app-dev-xxxxx.azurewebsites.net"
-Invoke-WebRequest -Uri $url -UseBasicParsing
-```
+- [../../appV2/README.md](../../appV2/README.md) - .NET application
+- [../../appV3/README.md](../../appV3/README.md) - Python application
 
-### 4. Monitor Application
+---
 
-1. **Azure Portal**: Search for Application Insights resource
-2. **View Metrics**: Check application health and performance
-3. **Set Alerts**: Configure alerts for errors and performance thresholds
-4. **View Logs**: Check diagnostic logs in Log Analytics
+## ❓ FAQ
 
-## Troubleshooting
+### Q: How long does deployment take?
 
-### Deployment Fails with "Insufficient Quota"
+**A**: ~15-20 minutes for all 3 layers (Core: 2-3 min, IaaS: 5-10 min, PaaS: 5-10 min)
 
-- Check your subscription quota for the region
-- Try a different region or contact Azure support
+### Q: What if deployment fails?
 
-### SQL Connection Fails
+**A**: See troubleshooting in QUICK_REFERENCE_CARD.md
 
-- Verify firewall rules allow your IP
-- Check connection string in Key Vault
-- Ensure database is accessible: `az sql db show --resource-group <rg> --server <sql-server> --name jobsitedb`
+### Q: Can I deploy just one layer?
 
-### App Service Shows Error
+**A**: Yes, but IaaS depends on Core outputs, and PaaS depends on Core outputs
 
-- Check Application Insights for error details
-- Review Application Logs in Log Analytics
-- Enable HTTP logs: `az webapp config appsettings set --resource-group <rg> --name <app-name> --settings WEBSITE_HTTPLOGGING_RETENTION_DAYS=7`
+### Q: How do I add/remove VMs?
 
-### High Costs
+**A**: Edit VMSS size in iaas/parameters.bicepparam, then redeploy IaaS layer
 
-- Review App Service Plan SKU (consider downsizing)
-- Check SQL Database DTU usage
-- Review retention policies for logs
+### Q: Where are my secrets stored?
 
-## Cost Estimation
+**A**: All secrets are in Key Vault (not in templates or scripts)
 
-| Environment | App Service | SQL Database | Storage | Monitoring | **Total/Month** |
-| ----------- | ----------- | ------------ | ------- | ---------- | --------------- |
-| **Dev**     | $60         | $15          | $10     | $5         | **$90**         |
-| **Staging** | $85         | $25          | $10     | $5         | **$125**        |
-| **Prod**    | $250        | $150         | $10     | $10        | **$420**        |
+### Q: Can I deploy to a different region?
 
-_Estimates based on Azure pricing (Jan 2024). Actual costs may vary._
+**A**: Yes, change the `location` parameter in parameters.bicepparam
 
-## Scaling
+---
 
-### Vertical Scaling (Change SKU)
+## 📞 Support
 
-```bash
-# Change App Service Plan
-az appservice plan update \
-  --resource-group jobsite-prod-rg \
-  --name jobsite-asp-prod \
-  --sku P2V2
-```
+| Issue                 | Reference                                                                            |
+| --------------------- | ------------------------------------------------------------------------------------ |
+| Deployment errors     | QUICK_REFERENCE_CARD.md (Troubleshooting)                                            |
+| What resources exist? | INDEX.md                                                                             |
+| How do I deploy?      | QUICK_START.md                                                                       |
+| Why this design?      | [../../specs/001-network-redesign/plan.md](../../specs/001-network-redesign/plan.md) |
+| Network architecture? | [../../specs/001-network-redesign/spec.md](../../specs/001-network-redesign/spec.md) |
 
-### Horizontal Scaling (Add Instances)
+---
 
-```bash
-# For P1V2+ SKUs, enable auto-scale
-az monitor autoscale create \
-  --resource-group jobsite-prod-rg \
-  --resource-name jobsite-asp-prod \
-  --resource-type "Microsoft.Web/serverfarms" \
-  --min-count 2 --max-count 10 \
-  --count 2
-```
-
-### SQL Database Scaling
-
-```bash
-# Change SQL Database SKU
-az sql db update \
-  --resource-group jobsite-prod-rg \
-  --server jobsite-sql-prod-xxxxx \
-  --name jobsitedb \
-  --service-objective P2
-```
-
-## Maintenance
-
-### Backup Management
-
-- **App Service**: Automatic backups stored in storage account
-- **SQL Database**: Automated backups (daily for 7 days, weekly for 4 weeks, monthly for 12 months)
-- **Manual Backup**: `az sql db export --resource-group <rg> --server <sql> --name jobsitedb --admin-login sqladmin --admin-password <pwd> --storage-key-type SharedAccessKey --storage-key <key> --storage-uri https://<storage>.blob.core.windows.net`
-
-### Updates & Patching
-
-- **OS**: Automatic monthly patching
-- **Runtime**: Monitor notifications in Azure Portal
-- **Extensions**: Application Insights extension auto-updates
-
-### Monitoring Alerts
-
-Configure alerts in Application Insights:
-
-- Error rate > 5%
-- Response time > 2 seconds
-- Server availability < 99%
-- Failed requests > 10
-
-## Cleanup
-
-⚠️ **Warning**: This will delete all resources and data
-
-```bash
-# Delete entire resource group
-az group delete --resource-group jobsite-dev-rg --yes --no-wait
-
-# Or delete specific resources
-az resource delete --resource-group jobsite-dev-rg --ids /subscriptions/.../providers/Microsoft.Sql/servers/jobsite-sql-dev-xxxxx
-```
-
-## Support & Documentation
-
-- [Bicep Documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/)
-- [App Service Documentation](https://learn.microsoft.com/en-us/azure/app-service/)
-- [Azure SQL Documentation](https://learn.microsoft.com/en-us/azure/azure-sql/)
-- [Key Vault Documentation](https://learn.microsoft.com/en-us/azure/key-vault/)
-
-## License
-
-Same as parent project
-
-## Version History
-
-| Version | Date       | Changes                                          |
-| ------- | ---------- | ------------------------------------------------ |
-| 1.0     | 2026-01-20 | Initial Bicep template for legacy app deployment |
+**Last Updated**: 2026-01-21  
+**Status**: ✅ Production-ready  
+**Next Step**: See [QUICK_START.md](QUICK_START.md)

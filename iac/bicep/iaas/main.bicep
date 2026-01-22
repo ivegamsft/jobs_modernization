@@ -10,6 +10,7 @@ param applicationName string = 'jobsite'
 param location string = 'swedencentral'
 param frontendSubnetId string
 param dataSubnetId string
+param githubRunnersSubnetId string
 param adminUsername string = 'azureadmin'
 @secure()
 param adminPassword string = newGuid()
@@ -44,6 +45,7 @@ module iaasResources './iaas-resources.bicep' = {
     location: location
     frontendSubnetId: frontendSubnetId
     dataSubnetId: dataSubnetId
+    githubRunnersSubnetId: githubRunnersSubnetId
     adminUsername: adminUsername
     adminPassword: adminPassword
     vmSize: vmSize
