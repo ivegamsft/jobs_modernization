@@ -27,12 +27,10 @@ if ($confirmation -ne 'y') {
     exit 0
 }
 
-Set-Location "c:\git\jobs_modernization\iac\bicep\core"
-
 $deploymentParams = @(
     "--name", "jobsite-vpn-gateway-dev"
     "--location", $location
-    "--template-file", "deploy-vpn.bicep"
+    "--template-file", "$PSScriptRoot\..\bicep\core\deploy-vpn.bicep"
     "--parameters", "environment=$environment"
     "--parameters", "applicationName=$applicationName"
     "--parameters", "location=$location"

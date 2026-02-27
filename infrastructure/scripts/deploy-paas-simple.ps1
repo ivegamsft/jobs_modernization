@@ -38,7 +38,7 @@ Write-Host "Starting PaaS deployment..." -ForegroundColor Yellow
 az deployment sub create `
     --name "jobsite-paas-$environment" `
     --location $location `
-    --template-file "c:\git\jobs_modernization\iac\bicep\paas\main.bicep" `
+    --template-file "$PSScriptRoot\..\bicep\paas\main.bicep" `
     --parameters environment=$environment `
     --parameters location=$location `
     --parameters resourceGroupName=$resourceGroupName `

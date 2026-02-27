@@ -23,11 +23,8 @@ Write-Host ""
 
 # Generate admin password
 Write-Host "3. Generating admin credentials..." -ForegroundColor Yellow
-$chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-$special = "!@#$%"
-$adminPassword = -join ((1..12) | ForEach-Object { $chars[(Get-Random -Maximum $chars.Length)] })
-$adminPassword += $special[(Get-Random -Maximum $special.Length)]
-$adminPassword += "Aa1"
+. "$PSScriptRoot\New-SecurePassword.ps1"
+$adminPassword = New-SecurePassword -Length 20
 
 Write-Host "   ✅ Credentials generated" -ForegroundColor Green
 Write-Host ""
@@ -40,8 +37,8 @@ Write-Host ""
 $deployment = az deployment sub create `
     --name "jobsite-iaas-dev" `
     --location $location `
-    --template-file "./bicep/iaas/main.bicep" `
-    --parameters "@./iaas-params.json" `
+    --template-file "$PSScriptRoot\..\bicep\iaas\main.bicep" `
+    --parameters "@$PSScriptRoot\..\iaas-params.json" `
     --parameters adminPassword=$adminPassword `
     -o json 2>&1
 

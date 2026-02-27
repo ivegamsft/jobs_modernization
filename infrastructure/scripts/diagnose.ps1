@@ -38,7 +38,7 @@ Write-Host "4. Validating IAAS Bicep template..." -ForegroundColor Yellow
 $validation = az deployment sub validate `
     --name "test-validation" `
     --location eastus `
-    --template-file "c:\git\jobs_modernization\iac\bicep\iaas\main.bicep" `
+    --template-file "$PSScriptRoot\..\bicep\iaas\main.bicep" `
     --parameters environment=dev `
     --parameters location=eastus `
     --parameters frontendSubnetId="/dummy" `

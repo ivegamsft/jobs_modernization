@@ -12,7 +12,7 @@ Write-Host ""
 $environment = "dev"
 $applicationName = "jobsite"
 $location = "swedencentral"
-$agentTemplateFile = "./bicep/agents/main.bicep"
+$agentTemplateFile = "$PSScriptRoot\..\bicep\agents\main.bicep"
 
 # ============================================================================
 # Get Azure DevOps Configuration

@@ -9,7 +9,7 @@ Write-Host "══════════════════════�
 Write-Host ""
 
 # Load password generation function
-. "$PSScriptRoot\scripts\New-SecurePassword.ps1"
+. "$PSScriptRoot\New-SecurePassword.ps1"
 
 # Parameters
 $environment = "dev"
@@ -35,7 +35,7 @@ Write-Host ""
 az deployment sub create `
     --name "jobsite-core-dev" `
     --location $location `
-    --template-file "./bicep/core/main.bicep" `
+    --template-file "$PSScriptRoot\..\bicep\core\main.bicep" `
     --parameters `
     environment=$environment `
     applicationName=$applicationName `
@@ -52,7 +52,8 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "✅ CORE DEPLOYMENT COMPLETE" -ForegroundColor Green
     Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "Key Vault: kv-dev-swc-ubzfsgu4p5" -ForegroundColor Cyan
+    $kvName = (az deployment sub show --name "jobsite-core-dev" --query "properties.outputs.keyVaultName.value" -o tsv)
+    Write-Host "Key Vault: $kvName" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Credentials stored in Key Vault:" -ForegroundColor Cyan
     Write-Host "  • sql-admin-username: jobsiteadmin" -ForegroundColor Yellow

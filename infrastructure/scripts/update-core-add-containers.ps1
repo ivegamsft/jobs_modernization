@@ -44,7 +44,7 @@ Write-Host ""
 az deployment sub create `
     --name "jobsite-core-dev" `
     --location $location `
-    --template-file "c:\git\jobs_modernization\iac\bicep\core\main.bicep" `
+    --template-file "$PSScriptRoot\..\bicep\core\main.bicep" `
     --parameters environment=$environment `
     --parameters location=$location `
     --parameters sqlAdminUsername=$sqlAdminUsername `
