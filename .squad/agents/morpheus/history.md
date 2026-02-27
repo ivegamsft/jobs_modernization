@@ -9,6 +9,104 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-02-27: Phase 1 Deployment Plan — Comprehensive Local & Azure Deployment Guide
+
+**Context:** User directive to create Phase 1 Deployment Plan document. Goal is step-by-step guide for getting legacy app running, covering local development, database setup, and Azure PaaS preview.
+
+**Methodology:**
+- Examined appV1.5-buildable project structure (.csproj, Web.config, NuGet dependencies)
+- Analyzed database project (JobsDB/) and DACPAC deployment approach
+- Reviewed infrastructure Bicep templates for PaaS layer
+- Structured plan into logical phases: prerequisites, build, database, local run, troubleshooting, Azure preview
+
+**Key Findings:**
+
+1. **App Build Profile:**
+   - .NET Framework 4.8 (legacy Web Forms)
+   - Uses packages.config (pre-PackageReference era)
+   - MSBuild project format (SDK-style, not old web project format)
+   - IIS Express compatible (UseIISExpress=true in .csproj)
+   - App Service Plan S1 sizing in Bicep template appropriate
+
+2. **Database Architecture:**
+   - SSDT-format database project (JobsDB.sqlproj)
+   - DACPAC deployment pattern for schema/procedures
+   - Separate seed data scripts (ordered, runnable independently)
+   - Dual connection strings: application data + ASP.NET membership provider
+   - Hard-coded LocalDB path in appV1.5-buildable Web.config (requires update before running)
+
+3. **Infrastructure Foundation:**
+   - PaaS Bicep templates complete and functional
+   - App Service Plan + Azure SQL Server already defined
+   - App Service configured for .NET Framework 4.8 (important constraint)
+   - TLS 1.2 minimum, HTTPS enforced (Phase 2 pattern)
+   - System-assigned managed identity on App Service (good security practice)
+
+4. **Connection String Management:**
+   - Phase 1: LocalDB with hardcoded server name + Integrated Security
+   - Phase 2: Azure SQL with TCP endpoint + username/password from Key Vault
+   - Dual strings pattern (one for app, one for membership) preserved throughout
+
+5. **Deployment Risk Assessment:**
+   - **High risk:** appV1.5 buildability untested at start of Phase 1 (critical blocker)
+   - **Medium risk:** Database migration from LocalDB → Azure SQL (BACPAC export/import approach standard)
+   - **Low risk:** Infrastructure deployment (Bicep templates well-structured)
+
+**Architecture Decisions Documented:**
+
+1. **Local Development Pattern:** IIS Express + LocalDB (lowest friction for Windows dev)
+2. **Database Deployment:** DACPAC (SSDT standard, preserves schema consistency)
+3. **Connection String Updates:** In-place Web.config modification (minimal change principle)
+4. **Smoke Testing Approach:** HTTP 200 + master page rendering + database query success
+5. **Phase 2 Preview:** Included BACPAC migration path and Key Vault integration pattern
+
+**Plan Contents:**
+
+- Part 1: Prerequisites (tools, versions, verification)
+- Part 2: Building appV1.5 (NuGet restore, MSBuild, troubleshooting)
+- Part 3: Database setup (LocalDB instance, DACPAC deploy, seed data, connection strings)
+- Part 4: Local execution (IIS Express vs full IIS)
+- Part 5: Troubleshooting matrix (build, database, runtime issues)
+- Part 6: Azure Phase 2 preview (architecture, templates, deployment steps)
+- Success criteria with verification commands
+- Known blockers and risk assessment
+- Quick reference command guide
+
+**Key Paths Documented:**
+
+- Source: `phase1-legacy-baseline/appV1.5-buildable/`
+- Database: `database/JobsDB/` (DACPAC deployment)
+- Infrastructure: `infrastructure/bicep/paas/` (main.bicep + paas-resources.bicep)
+- Database LocalDB location: `(localdb)\JobsLocalDb` (instance name as per standard)
+- Connection string format: `Server=(localdb)\JobsLocalDb;Database=JobsDB;Integrated Security=true;`
+
+**What This Means for Future Work:**
+
+1. **Phase 1 Execution:** Teams can now follow detailed step-by-step guide without guessing
+2. **Phase 2 Planning:** Azure resource mapping already defined; CI/CD pipeline next
+3. **Learning Repository:** Document serves dual purpose: deployment guide + teaching artifact
+4. **Troubleshooting Reference:** Common issues + solutions prevent rework
+5. **Risk Transparency:** Known blockers listed upfront; success criteria clear
+
+**User Preferences Captured:**
+
+- Clear, tabular format for prerequisites and troubleshooting
+- Command examples for every major step
+- Rationale for each decision (why LocalDB, why DACPAC, why dual connection strings)
+- Cross-references to related documentation
+- Quick reference section for power users
+
+**Team Awareness:**
+
+- Plan addresses "appV1.5 buildability untested" blocker explicitly
+- Provides verification steps for each phase
+- Includes rollback/remediation guidance
+- Connects Phase 1 → Phase 2 transition clearly
+
+**Related:**
+- Artifact: `phase1-legacy-baseline/DEPLOYMENT_PLAN.md`
+- Status: ✅ Complete and ready for team execution
+
 ### 2026-02-27: Documentation Audit — Post-Reorganization Cleanup, Merged to Decisions
 
 **Context:** User directive to audit all documentation after three-phase repo reorganization and ensure all docs make sense. Remove stale references and noise.

@@ -5,6 +5,158 @@
 
 ---
 
+## 2026-02-27: Phase 1 Deployment Plan Established
+
+**Decision ID:** phase1-deployment-plan-2026-02-27  
+**Author:** Morpheus (Lead)  
+**Status:** Decision Document  
+**Impact:** Medium (enables Phase 1 execution)  
+**Related:** Legacy baseline deployment, database setup, Azure PaaS preview
+
+### Context
+
+Phase 1 requires a comprehensive deployment guide covering local development setup, building appV1.5, database setup, and app verification.
+
+### Decision
+
+**Created comprehensive Phase 1 Deployment Plan** at `phase1-legacy-baseline/DEPLOYMENT_PLAN.md` with:
+- Local development prerequisites (.NET Framework 4.8, VS 2022, SQL Server LocalDB)
+- Building appV1.5-buildable (NuGet restore, MSBuild)
+- Database setup (DACPAC deployment, seed data ordering)
+- Local execution (IIS Express, full IIS, smoke tests)
+- Troubleshooting matrix (build, database, runtime)
+- Azure Phase 2 preview (PaaS architecture, Bicep templates, migration)
+- 9-point success criteria with verification script
+
+### Key Decisions
+
+1. **LocalDB Instance:** `(localdb)\JobsLocalDb` (clear, descriptive, consistent)
+2. **Database Deployment:** Prioritize DACPAC (native to SQL Server, SSDT standard)
+3. **Connection Strings:** Document dual strings (app data + ASP.NET membership) — legacy constraint
+4. **Dev Environment:** IIS Express default (zero setup), full IIS as alternative
+5. **Migration:** BACPAC export/import (LocalDB → Azure SQL, industry standard)
+6. **Smoke Tests:** 9-point checklist (HTTP 200 + DB connectivity + master page)
+
+### Impact
+
+- Removes ambiguity for Phase 1 execution
+- Enables teams to verify appV1.5 buildability (critical blocker)
+- Sets pattern for Phase 2 Azure migration
+- Learning value — rationale explained for each decision
+
+---
+
+## 2026-02-27: Phase 1 Testing Strategy — Test Framework & Infrastructure
+
+**Decision ID:** phase1-testing-strategy-2026-02-27  
+**Author:** Mouse (Tester)  
+**Date:** 2026-02-27  
+**Status:** Proposed for team review  
+**Impact:** Medium (defines test approach for Phase 1 → Phase 2 baseline)
+
+### Context
+
+Phase 1 goal is buildability and runnability. No existing tests in legacy codebase — need comprehensive baseline for Phase 2 comparison.
+
+### Decision
+
+**Created TEST_PLAN.md** at `phase1-legacy-baseline/TEST_PLAN.md` with 6 test categories (40+ test cases):
+- Build verification (5 tests)
+- Database (17 tests) — DACPAC, schema, seed data, stored procedures
+- Smoke tests (24 tests) — App startup, job search, registration, login, admin
+- Integration (20 tests) — App↔DB connectivity, stored procedures
+- Regression baseline (document current behavior pre-Phase 2)
+- Test infrastructure (framework, database strategy, CI/CD)
+
+### Framework Choices
+
+| Component | Choice | Rationale |
+|-----------|--------|-----------|
+| Build | MSBuild + GitHub Actions | .NET native, cross-platform |
+| Database | T-SQL + PowerShell | Native to SQL Server |
+| Unit Tests | MSTest | Built into Visual Studio |
+| Integration | xUnit + Testcontainers | Modern, database isolation |
+| UI/Smoke | Selenium WebDriver (C#) | All platforms, scriptable |
+| DB Instance | Docker SQL Server (CI) + LocalDB (dev) | Reproducible, lightweight |
+
+### Phase 1 Success Criteria
+
+- Solution compiles (Debug & Release)
+- 22 database tables created
+- ~150 stored procedures callable
+- App starts without unhandled exceptions
+- User can register, login, browse jobs, search
+- Admin access control enforced
+- All baseline behavior documented
+
+### Implementation Timeline
+
+| Phase | Duration | Deliverable |
+|-------|----------|-------------|
+| 1a | Week 1 | Manual baseline testing, Section 5 docs |
+| 1b | Week 2-3 | Automated tests (build, DB, smoke) |
+| 1c | Week 4 | Coverage report, Phase 1 approval |
+
+### Open Questions for Team
+
+1. **Database instance:** Docker for everyone or LocalDB? → **Rec:** Docker in CI/CD, LocalDB optional
+2. **UI test coverage:** Smoke only or full? → **Rec:** Smoke in 1b, expand phase 2
+3. **Stored proc tests:** All 150 or top 20? → **Rec:** Top 20 critical flows
+4. **Performance baseline:** Worth measuring? → **Rec:** Measure, no strict SLAs yet
+
+### Impact
+
+Establishes Phase 1 works. Creates regression baseline for Phase 2 comparison. Sets test pattern for Phases 2 & 3.
+
+---
+
+## 2026-02-27: Infrastructure Script Cleanup
+
+**Decision ID:** script-cleanup-2026-02-27  
+**Author:** Dozer (DevOps)  
+**Status:** Executed  
+**Impact:** Medium (developer experience, security hygiene)
+
+### Context
+
+20 PowerShell scripts scattered across 4 locations with hardcoded paths, weak passwords, or one-time tools.
+
+### Decision
+
+Audited every script. Applied three rules:
+1. **DELETE** if superseded, hardcoded paths, one-time tool, or security liability
+2. **FIX** if worth keeping but had wrong paths or weak patterns
+3. **CONSOLIDATE** all deployment scripts into `infrastructure/scripts/`
+
+### What Changed
+
+**Deleted (5 scripts, -492 lines):**
+- deploy-app-layers.ps1 (superseded, hardcoded paths)
+- deploy-iaas-v2.ps1 (superseded by deploy-iaas-clean.ps1)
+- redeploy-iaas-wfe.ps1 (one-time troubleshooting)
+- CLEANUP_SECRETS.ps1 (one-time git cleanup)
+- cleanup_secrets.py (Python duplicate)
+
+**Fixed (7 scripts):**
+- All hardcoded `c:\git\jobs_modernization\iac\` → `$PSScriptRoot\..`
+- Weak password generation replaced with `New-SecurePassword.ps1`
+
+**Consolidated:**
+All scripts now in `infrastructure/scripts/` (except `bicep/iaas/scripts/iis-install.ps1` which must stay adjacent to Bicep template)
+
+### Final Script Inventory (15 scripts)
+
+Deploy-Bicep.ps1, deploy-core.ps1, deploy-iaas-clean.ps1, deploy-paas-simple.ps1, deploy-agents.ps1, deploy-vpn.ps1, update-core-add-containers.ps1, bootstrap-terraform-backend.ps1, New-SecurePassword.ps1, create-nat-inbound-rules.ps1, check-status.ps1, diagnose.ps1, get-credentials.ps1, iis-install.ps1 (bicep/iaas/scripts/)
+
+### Implications
+
+1. All deployment scripts in ONE place (`infrastructure/scripts/`)
+2. Scripts work from any CWD (all `$PSScriptRoot`-based)
+3. No hardcoded absolute paths remain
+4. Docs may have stale script path references — flag for next audit
+
+---
+
 ## 2026-02-27: Three-Phase Learning Journey — Repository Reorganization
 
 **Decision ID:** repo-reorg-2026-02-27  
