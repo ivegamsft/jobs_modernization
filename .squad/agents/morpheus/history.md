@@ -9,7 +9,7 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
-### 2026-02-27: Documentation Audit — Post-Reorganization Cleanup
+### 2026-02-27: Documentation Audit — Post-Reorganization Cleanup, Merged to Decisions
 
 **Context:** User directive to audit all documentation after three-phase repo reorganization and ensure all docs make sense. Remove stale references and noise.
 
@@ -38,7 +38,7 @@
 - ✅ `database/SEED_DATA_CONFLICT_ANALYSIS.md` — Technical analysis
 
 **Deleted (1 doc):**
-- ❌ `docs/INDEX.md` — 400+ line outdated navigation index for non-existent infrastructure docs. Predates repo reorganization. Noise. (Commit: cecc8cd)
+- ❌ `docs/INDEX.md` — 400+ line outdated navigation index for non-existent infrastructure docs. Predates repo reorganization. Noise.
 
 **Key Finding:** Reorganization was surgical and well-executed. Nearly all documentation already accounts for new structure. Only garbage was one orphaned navigation file.
 
@@ -48,10 +48,9 @@
 - New contributors can navigate with confidence
 - No stale path traps or broken references
 
-**Related:**
-- Commit: `cecc8cd` (delete docs/INDEX.md)
+**Team Awareness:** Merged decision to `.squad/decisions.md`. Dozer's cleanup work documented. All agents understand documentation status.
 
-**Status:** ✅ Complete — Documentation audit passed. Repository clean for Phase 1 work.
+**Status:** ✅ Complete — Documentation audit passed, decisions merged
 
 ### 2026-02-27: Infrastructure Audit & Starting Plan — Phase 0 Validation Required
 

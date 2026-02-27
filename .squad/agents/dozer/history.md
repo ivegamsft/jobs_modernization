@@ -134,7 +134,7 @@
 **Outcome:**
 Repository now clearly communicates the three-phase modernization journey. Folder names are self-documenting. All 15 loose markdown files organized into logical homes. Infrastructure consolidated. Ready for learners to follow the path from legacy → Azure PaaS → modern architecture.
 
-### 2026-02-27: Infrastructure Documentation Cleanup — 13 Deleted, 18 Fixed
+### 2026-02-27: Infrastructure Documentation Cleanup — 13 Deleted, 18 Fixed, Merged to Decisions
 
 **Context:** Post-reorganization audit of all markdown files under `infrastructure/`. After the `iac/` → `infrastructure/` rename, most docs had stale paths, some contained exposed credentials, and many were redundant duplicates.
 
@@ -168,4 +168,6 @@ Repository now clearly communicates the three-phase modernization journey. Folde
 
 **Key Learning:** Network security docs had 10 files for one feature — consolidated to 5 essential docs.
 
-**Status:** ✅ Complete, committed
+**Team Awareness:** Merged decision to `.squad/decisions.md`. All agents now aware docs were cleaned.
+
+**Status:** ✅ Complete, committed, merged to decisions

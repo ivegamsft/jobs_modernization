@@ -1,11 +1,11 @@
 ---
-updated_at: 2026-02-27T01:36:00Z
-focus_area: Phase 1 — Getting legacy .NET app running
+updated_at: 2026-02-27T02:07:00Z
+focus_area: Infrastructure cleanup & validation
 active_issues: []
 ---
 
 # What We're Focused On
 
-Repository reorganized into three-phase learning journey. **Phase 1 complete:** Structure ready.
+Infrastructure documentation cleaned — **14 outdated/duplicate docs deleted, 18 paths corrected**. Repository docs verified accurate. Now prioritizing infrastructure template validation and deployment blocker fixes.
 
-**Next:** Get legacy .NET 2.0 Web Forms app (appV1.5-buildable) running successfully. Document baseline, understand code issues, prepare for migration to Azure in Phase 2.
+**Next:** Validate Bicep/Terraform templates, fix compilation errors, test Phase 1 legacy app buildability, sequence Phase 0 validation work before Phase 1 infrastructure commit.

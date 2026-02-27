@@ -66,6 +66,103 @@ Root directory reduced from **15+ markdown files → 3 files** (README, .gitigno
 
 ---
 
+## 2026-02-27: Infrastructure Documentation Cleanup
+
+**Decision ID:** infra-doc-cleanup-2026-02-27  
+**Author:** Dozer (DevOps)  
+**Status:** Executed  
+**Impact:** Medium (documentation quality, security)
+
+### Context
+
+After the `iac/` → `infrastructure/` reorganization, all infrastructure documentation had stale paths. Two files contained plaintext passwords committed to git. The `infrastructure/bicep/` directory had 10 network security docs that were 80% duplicate content.
+
+### Decision
+
+1. **Delete 13 files** that were broken, contained credentials, or were pure duplicates
+2. **Fix paths in 18 files** — all `iac/` references → `infrastructure/`, all `appV2/appV3` → `phase3-modernization/`
+3. **Fix incorrect data** — core/README.md had wrong VNet CIDR, terraform/STATUS.md marked complete modules as pending
+
+### Security Note
+
+Two files contained plaintext passwords that were committed to git history:
+- `infrastructure/DEPLOYMENT_STATUS.md` — VM admin password + certificate password
+- `infrastructure/docs/CREDENTIALS_AND_NEXT_STEPS.md` — Same credentials
+
+These passwords should be rotated if they were ever used in a real deployment. The files are removed from HEAD but remain in git history.
+
+### Files Deleted (13)
+
+1. infrastructure/DEPLOYMENT_STATUS.md
+2. infrastructure/docs/CREDENTIALS_AND_NEXT_STEPS.md
+3. infrastructure/bicep/INDEX.md
+4. infrastructure/bicep/QUICK_START.md
+5. infrastructure/bicep/DEPLOYMENT_VALIDATION.md
+6. infrastructure/bicep/NETWORK_SECURITY_COMPLETE.md
+7. infrastructure/bicep/NETWORK_SECURITY_FILES_INDEX.md
+8. infrastructure/bicep/NETWORK_SECURITY_INDEX.md
+9. infrastructure/bicep/NETWORK_SECURITY_QUICKSTART.md
+10. infrastructure/bicep/README_NETWORK_SECURITY_CHANGES.md
+11. infrastructure/bicep/paas/FILE_INDEX.md
+12. infrastructure/bicep/paas/INTEGRATION_SUMMARY.md
+13. infrastructure/bicep/paas/COMPLETION_REPORT.md
+
+### Files Fixed (18)
+
+- infrastructure/bicep/README.md
+- infrastructure/bicep/core/README.md
+- infrastructure/terraform/STATUS.md
+- infrastructure/docs/4LAYER_RG_QUICK_REFERENCE.md
+- infrastructure/README.md
+- 13 other files with stale path references
+
+### Related
+
+- Orchestration log: `.squad/orchestration-log/2026-02-27T02-07-dozer.md`
+
+---
+
+## 2026-02-27: Post-Reorganization Documentation Audit
+
+**Decision ID:** doc-audit-2026-02-27  
+**Author:** Morpheus (Lead)  
+**Status:** Completed  
+**Impact:** Low (hygiene — removes noise)
+
+### Context
+
+User directive: "ensure the current documents make sense. if not, delete them."
+
+After repository reorganization from loose app folders (appV1/V2/V3) to three-phase structure (phase1/phase2/phase3), documentation needed audit. The restructuring was comprehensive (440+ files moved), and documentation might contain stale paths or outdated info.
+
+### Decision
+
+Audited EVERY document in the repository post-reorganization. Verified 21 documents for accuracy and learning value. Deleted 1 orphaned file.
+
+### Documents
+
+**Kept (21 docs):** README.md (root), LEARNING_PATH.md, all phase READMEs, CODE_ANALYSIS_REPORT.md, REACT_CONVERSION_PLAN.md, CONVERSION_WORKFLOW_PROMPT.md, all spec kit docs, all database docs
+
+**Deleted (1 doc):**
+- `docs/INDEX.md` (408 lines) — Orphaned navigation index for infrastructure documents that don't exist in current structure
+
+### Key Finding
+
+The reorganization was surgical and well-executed. Documentation already accounts for new structure. No stale path traps or broken references found except one abandoned artifact.
+
+### Implications
+
+1. **Documentation is trustworthy** — New contributors can navigate with confidence
+2. **No broken links** — All references point to actual files
+3. **Clean slate for Phase 1 work** — Can proceed without doc-related distractions
+4. **Learning journey intact** — Three-phase story preserved across all docs
+
+### Related
+
+- Orchestration log: `.squad/orchestration-log/2026-02-27T02-07-morpheus.md`
+
+---
+
 ## 2026-02-27: Migrate-Then-Modernize Strategy
 
 **Decision ID:** migrate-then-modernize  
