@@ -1,0 +1,23 @@
+{
+  "universe_usage_history": [
+    {
+      "universe": "The Matrix",
+      "first_used": "2026-02-27T01:35:45Z",
+      "repo": "jobs_modernization"
+    }
+  ],
+  "assignment_cast_snapshots": {
+    "initial-cast-2026-02-27": {
+      "assignment_id": "initial-cast-2026-02-27",
+      "universe": "The Matrix",
+      "timestamp": "2026-02-27T01:35:45Z",
+      "agents": {
+        "morpheus": "Lead",
+        "tank": "Backend Dev",
+        "trinity": "Frontend Dev",
+        "dozer": "DevOps",
+        "mouse": "Tester"
+      }
+    }
+  }
+}
