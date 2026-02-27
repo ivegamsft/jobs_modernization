@@ -43,9 +43,9 @@ $validation = az deployment sub validate `
     --parameters location=eastus `
     --parameters frontendSubnetId="/dummy" `
     --parameters dataSubnetId="/dummy" `
-    --parameters adminPassword="Test123!" `
+    --parameters adminPassword="<REPLACE_WITH_SECURE_PASSWORD>" `
     --parameters appGatewayCertData="dummybase64" `
-    --parameters appGatewayCertPassword="Test123!" `
+    --parameters appGatewayCertPassword="<REPLACE_WITH_SECURE_PASSWORD>" `
     -o json 2>&1
 
 if ($validation -like "*error*" -or $validation -like "*Error*") {
