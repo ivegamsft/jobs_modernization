@@ -65,7 +65,7 @@ This provides 8x more IP addresses with room for future expansion.
 
 ### 1. Core Resources Bicep Update
 
-File: `iac/bicep/core/core-resources.bicep`
+File: `infrastructure/bicep/core/core-resources.bicep`
 
 ```bicep
 var subnetConfig = {
@@ -105,7 +105,7 @@ var vnetAddressPrefix = '10.50.0.0/21'  // 2,048 IPs
 
 ### 2. Core Main Bicep Update
 
-File: `iac/bicep/core/main.bicep`
+File: `infrastructure/bicep/core/main.bicep`
 
 Update the default `vnetAddressPrefix` parameter:
 

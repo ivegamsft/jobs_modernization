@@ -9,7 +9,39 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
-### 2026-02-27: Repository Reorganization Complete — Infrastructure Consolidated, Phase Structure Ready
+### 2026-02-27: Deep Infrastructure Audit — Critical Findings
+
+**Context:** Comprehensive audit of all IaC (Bicep + Terraform), CI/CD pipelines, deployment scripts, and documentation.
+
+**Key Infrastructure Patterns:**
+- **Bicep structure**: `infrastructure/bicep/{core,iaas,paas,agents}/` — each has `main.bicep` (subscription-scoped entry point) + `*-resources.bicep` (resource-group-scoped module) + parameter files
+- **Terraform structure**: `infrastructure/terraform/{core,iaas,paas,agents}/` — modular with `main.tf`/`variables.tf`/`outputs.tf` per module, root orchestrates with conditional `count` deployment
+- **Deployment scripts**: `infrastructure/scripts/Deploy-Bicep.ps1` (main orchestrator), `infrastructure/deploy-core.ps1`, `infrastructure/deploy-iaas-clean.ps1`, `infrastructure/deploy-paas-simple.ps1` (layer-specific)
+- **CI/CD**: Both `.github/workflows/` and `.azure-pipelines/` exist with 11 pipelines each (deploy-core, deploy-iaas, deploy-paas, deploy-agents, deploy-vpn, deploy-app-iaas, deploy-app-paas, deploy-database-dac-iaas, deploy-database-dac-paas, build-jobsiteweb, build-database-dacpac)
+
+**Critical Findings:**
+1. **ALL 22 CI/CD pipelines broken** — reference old `iac/` path (now `infrastructure/`)
+2. **Bicep agents/main.bicep has compile error** — duplicate resource declaration
+3. **Bicep iaas/main.bicep and agents/main.bicep** — hardcoded VNet name from specific dev deployment
+4. **5+ parameter files have hardcoded passwords** committed to git
+5. **Bicep Key Vault defaults to Allow all networks** — Terraform correctly uses Deny
+6. **Container Apps subnet missing delegation** in Bicep (Terraform has it)
+7. **No subnet-level NSGs** in core network layer
+
+**Terraform vs Bicep Verdict:** Terraform is more production-ready. Has conditional deployment, variable validation, proper state management, and better security defaults.
+
+**Key File Paths:**
+- Bicep entry points: `infrastructure/bicep/{core,iaas,paas,agents}/main.bicep`
+- Terraform entry: `infrastructure/terraform/main.tf`
+- Main deploy script: `infrastructure/scripts/Deploy-Bicep.ps1`
+- Network config: Subnets defined in `infrastructure/bicep/core/core-resources.bicep` (lines 26-55) and `infrastructure/terraform/core/main.tf` (locals block)
+- VNet: 10.50.0.0/21 (2,048 IPs), 7 subnets, 44% reserved
+
+**Audit Report:** `.squad/decisions/inbox/dozer-infra-audit.md` — 23 prioritized fix items
+
+**Status:** ✅ Audit complete, report delivered
+
+### 2026-02-27: Repository Reorganization Complete— Infrastructure Consolidated, Phase Structure Ready
 
 **Context:** Team orchestration complete. Repository reorganization from Morpheus (proposed) + Dozer (executed) is finalized and documented.
 
@@ -101,3 +133,39 @@
 
 **Outcome:**
 Repository now clearly communicates the three-phase modernization journey. Folder names are self-documenting. All 15 loose markdown files organized into logical homes. Infrastructure consolidated. Ready for learners to follow the path from legacy → Azure PaaS → modern architecture.
+
+### 2026-02-27: Infrastructure Documentation Cleanup — 13 Deleted, 18 Fixed
+
+**Context:** Post-reorganization audit of all markdown files under `infrastructure/`. After the `iac/` → `infrastructure/` rename, most docs had stale paths, some contained exposed credentials, and many were redundant duplicates.
+
+**Files Deleted (13):**
+1. `infrastructure/DEPLOYMENT_STATUS.md` — Contained hardcoded passwords in plaintext + all `iac/` paths
+2. `infrastructure/docs/CREDENTIALS_AND_NEXT_STEPS.md` — Contained actual passwords (security risk)
+3. `infrastructure/bicep/INDEX.md` — Referenced old flat `iac/` structure with nonexistent files
+4. `infrastructure/bicep/QUICK_START.md` — Referenced old flat structure (main.bicep at root)
+5. `infrastructure/bicep/DEPLOYMENT_VALIDATION.md` — Same flat structure assumptions
+6. `infrastructure/bicep/NETWORK_SECURITY_COMPLETE.md` — Duplicate status doc (same NSG tables repeated)
+7. `infrastructure/bicep/NETWORK_SECURITY_FILES_INDEX.md` — 414-line duplicate index
+8. `infrastructure/bicep/NETWORK_SECURITY_INDEX.md` — Another duplicate navigation doc
+9. `infrastructure/bicep/NETWORK_SECURITY_QUICKSTART.md` — Overlapped with existing summaries
+10. `infrastructure/bicep/README_NETWORK_SECURITY_CHANGES.md` — Duplicate changelog
+11. `infrastructure/bicep/paas/FILE_INDEX.md` — Directory listing (no value over `ls`)
+12. `infrastructure/bicep/paas/INTEGRATION_SUMMARY.md` — Changelog duplicate
+13. `infrastructure/bicep/paas/COMPLETION_REPORT.md` — Status doc, not useful for learners
+
+**Files Fixed (18):**
+- All remaining `iac/` path references → `infrastructure/` across 17 files
+- `infrastructure/bicep/README.md` — Fixed `appV2/appV3` → `phase3-modernization/` paths
+- `infrastructure/bicep/core/README.md` — Fixed wrong VNet CIDR (10.50.0.0/16 → /21), wrong subnet sizes
+- `infrastructure/terraform/STATUS.md` — Fixed iaas/paas/agents shown as ⏳ pending → ✅ complete
+- `infrastructure/docs/4LAYER_RG_QUICK_REFERENCE.md` — Fixed broken appV2 link
+- `infrastructure/README.md` — Removed reference to deleted CREDENTIALS doc
+
+**Decision Criteria:**
+- DELETE: Contains credentials, references nonexistent files, pure duplicate of another doc
+- FIX: Good content with stale paths only
+- KEEP: Accurate, useful for the three-phase learning journey
+
+**Key Learning:** Network security docs had 10 files for one feature — consolidated to 5 essential docs.
+
+**Status:** ✅ Complete, committed

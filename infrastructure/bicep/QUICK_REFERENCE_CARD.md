@@ -24,8 +24,8 @@
 az deployment group create \
   --name jobsite-core-deploy \
   --resource-group jobsite-core-rg \
-  --template-file iac/bicep/core/main.bicep \
-  --parameters iac/bicep/core/parameters.bicepparam
+  --template-file infrastructure/bicep/core/main.bicep \
+  --parameters infrastructure/bicep/core/parameters.bicepparam
 ```
 
 ### 2. Get Core Outputs
@@ -43,8 +43,8 @@ az deployment group show \
 az deployment group create \
   --name jobsite-iaas-deploy \
   --resource-group jobsite-iaas-rg \
-  --template-file iac/bicep/iaas/main.bicep \
-  --parameters iac/bicep/iaas/parameters.bicepparam \
+  --template-file infrastructure/bicep/iaas/main.bicep \
+  --parameters infrastructure/bicep/iaas/parameters.bicepparam \
     vnetId="<from-core>" \
     frontendSubnetId="<from-core>" \
     dataSubnetId="<from-core>" \

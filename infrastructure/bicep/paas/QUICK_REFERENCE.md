@@ -2,7 +2,7 @@
 
 ## 30-Second Overview
 
-The **PaaS module** (`iac/bicep/paas/`) deploys App Service + SQL Database integrated with core infrastructure.
+The **PaaS module** (`infrastructure/bicep/paas/`) deploys App Service + SQL Database integrated with core infrastructure.
 
 **Key Point:** Depends on core module, no duplicate resources.
 
@@ -24,7 +24,7 @@ Copy these core outputs (replace in parameters.bicepparam):
 
 ```bash
 # Edit this file with values from Step 1:
-vi iac/bicep/paas/parameters.bicepparam
+vi infrastructure/bicep/paas/parameters.bicepparam
 
 # KEY CHANGES:
 # - Core IDs: peSubnetId, keyVaultName, logAnalyticsWorkspaceId
@@ -36,7 +36,7 @@ vi iac/bicep/paas/parameters.bicepparam
 ### 3️⃣ Validate & Deploy
 
 ```bash
-cd iac/bicep/paas
+cd infrastructure/bicep/paas
 
 # Validate first
 az bicep build --file main.bicep

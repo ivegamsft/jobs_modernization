@@ -43,7 +43,7 @@ Before deploying the PaaS module, you **must** have:
 1. **Core Infrastructure Deployed** - Run the #core module first:
 
    ```bash
-   cd iac/bicep/core
+   cd infrastructure/bicep/core
    az deployment group create \
      --resource-group jobsite-core-rg \
      --template-file main.bicep \
@@ -120,7 +120,7 @@ param sqlAdminPassword = 'ChangeMe@123456'  // IMPORTANT: Change this!
 ### Step 2: Deploy
 
 ```bash
-cd iac/bicep/paas
+cd infrastructure/bicep/paas
 
 # Validate first
 az bicep build --file main.bicep

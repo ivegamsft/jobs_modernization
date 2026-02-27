@@ -90,7 +90,7 @@ $env:TF_VAR_wfe_admin_password = "AnotherSecurePassword123!"
 ### 3. Initialize Terraform
 
 ```powershell
-cd iac/terraform
+cd infrastructure/terraform
 terraform init -backend-config=backend-dev.hcl
 ```
 

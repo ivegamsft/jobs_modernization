@@ -25,21 +25,21 @@
 
 ### IaaS Module
 
-- ⏳ `iaas/main.tf` - Web VMs, SQL VMs, Load Balancer, NSGs
-- ⏳ `iaas/variables.tf`
-- ⏳ `iaas/outputs.tf`
+- ✅ `iaas/main.tf` - Web VMs, SQL VMs, Load Balancer, NSGs
+- ✅ `iaas/variables.tf`
+- ✅ `iaas/outputs.tf`
 
 ### PaaS Module
 
-- ⏳ `paas/main.tf` - App Service, Azure SQL, Private Endpoints
-- ⏳ `paas/variables.tf`
-- ⏳ `paas/outputs.tf`
+- ✅ `paas/main.tf` - App Service, Azure SQL, Private Endpoints
+- ✅ `paas/variables.tf`
+- ✅ `paas/outputs.tf`
 
 ### Agents Module
 
-- ⏳ `agents/main.tf` - VMSS for CI/CD with Azure DevOps agent
-- ⏳ `agents/variables.tf`
-- ⏳ `agents/outputs.tf`
+- ✅ `agents/main.tf` - VMSS for CI/CD with Azure DevOps agent
+- ✅ `agents/variables.tf`
+- ✅ `agents/outputs.tf`
 
 ## Key Features Implemented
 

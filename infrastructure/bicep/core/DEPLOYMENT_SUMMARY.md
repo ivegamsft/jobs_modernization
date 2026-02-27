@@ -6,7 +6,7 @@ You now have a complete, production-ready Bicep-based infrastructure deployment 
 
 ## What Has Been Created
 
-### 📁 Core Infrastructure (`iac/bicep/core/`)
+### 📁 Core Infrastructure (`infrastructure/bicep/core/`)
 
 **main.bicep** (638 lines)
 
@@ -32,7 +32,7 @@ You now have a complete, production-ready Bicep-based infrastructure deployment 
 - Cost analysis
 - Troubleshooting guide
 
-### 📁 IaaS Infrastructure (`iac/bicep/iaas/`)
+### 📁 IaaS Infrastructure (`infrastructure/bicep/iaas/`)
 
 **main.bicep** (780+ lines)
 
@@ -190,7 +190,7 @@ You now have a complete, production-ready Bicep-based infrastructure deployment 
 ## File Reference
 
 ```
-iac/bicep/
+infrastructure/bicep/
 ├── QUICKSTART_VM.md                    ← You are here
 ├── core/
 │   ├── main.bicep                      ← Core infrastructure (638 lines)

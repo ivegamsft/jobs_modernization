@@ -9,6 +9,123 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-02-27: Documentation Audit — Post-Reorganization Cleanup
+
+**Context:** User directive to audit all documentation after three-phase repo reorganization and ensure all docs make sense. Remove stale references and noise.
+
+**Methodology:**
+- Reviewed every markdown file in root, docs/, phases/, specs/, and database/
+- Checked for: stale paths (appV1, appV1.5-JobsSiteWeb, iac/, Database/), accuracy, and learning value
+- Evaluated each against three-phase learning journey narrative
+
+**Audit Results:**
+
+**Kept (21 docs):**
+- ✅ `README.md` (root) — Accurate, no stale paths
+- ✅ `docs/LEARNING_PATH.md` — Clear learning journey, all phases referenced correctly  
+- ✅ `phase1-legacy-baseline/README.md` — Accurate, learning value
+- ✅ `phase1-legacy-baseline/docs/CODE_ANALYSIS_REPORT.md` — Technical analysis, valuable
+- ✅ `phase2-azure-migration/README.md` — Clear migration strategy
+- ✅ `phase3-modernization/README.md` — Accurate, documents strangler fig pattern
+- ✅ `phase3-modernization/docs/REACT_CONVERSION_PLAN.md` — Future reference value
+- ✅ `phase3-modernization/docs/CONVERSION_WORKFLOW_PROMPT.md` — AI workflow guide
+- ✅ `phase3-modernization/ui-react/README.md` — Honest placeholder, clear intent
+- ✅ `specs/README.md` — Spec kit framework guide, comprehensive
+- ✅ `specs/SPECS.md` — Quick reference, accurate
+- ✅ `specs/REVERSE_ENGINEERING_PROCESS.md` — Methodology explanation
+- ✅ `specs/QUICKSTART.md` — Feature status reference
+- ✅ `database/README.md` — Clear schema overview
+- ✅ `database/SEED_DATA_CONFLICT_ANALYSIS.md` — Technical analysis
+
+**Deleted (1 doc):**
+- ❌ `docs/INDEX.md` — 400+ line outdated navigation index for non-existent infrastructure docs. Predates repo reorganization. Noise. (Commit: cecc8cd)
+
+**Key Finding:** Reorganization was surgical and well-executed. Nearly all documentation already accounts for new structure. Only garbage was one orphaned navigation file.
+
+**What This Means for Future Work:**
+- Documentation is clean and current
+- All docs serve learning journey or have technical value
+- New contributors can navigate with confidence
+- No stale path traps or broken references
+
+**Related:**
+- Commit: `cecc8cd` (delete docs/INDEX.md)
+
+**Status:** ✅ Complete — Documentation audit passed. Repository clean for Phase 1 work.
+
+### 2026-02-27: Infrastructure Audit & Starting Plan — Phase 0 Validation Required
+
+**Context:** First deep review of infrastructure state after repository reorganization. Objective: understand what's deployable, what's working, what's missing, and sequence the work.
+
+**Key Findings:**
+
+1. **Core Infrastructure (✅ Deployed):**
+   - VNet `10.50.0.0/21` with 7 subnets properly sized
+   - Key Vault, Log Analytics, NAT Gateway all working
+   - Bicep templates for core are production-ready
+   - **No issues here** — this foundation is solid
+
+2. **PaaS & IaaS Infrastructure (🟨 Partial):**
+   - Bicep templates exist but incomplete (VMSS, SQL VM, App Gateway, full PaaS not finished)
+   - Scripts (`deploy-core.ps1`, `deploy-paas-simple.ps1`, etc.) partially complete
+   - **Blocker:** All Azure pipelines reference old `iac/` paths, not new `infrastructure/` paths (repo reorganization impact)
+
+3. **Phase 1 Legacy App (❓ Unknown):**
+   - AppV1.5-buildable exists but **buildability untested**
+   - No local setup guide
+   - No proof it compiles with `dotnet build` or `msbuild`
+   - **Critical blocker:** Can't progress without knowing if app builds
+
+4. **Database (❓ Partial):**
+   - JobsDB SQL project exists
+   - **Missing:** Database setup guide, migration strategy for Phase 2 (local → Azure SQL)
+   - DACPAC generation untested
+
+5. **Documentation Quality (🟨 Needs update):**
+   - DEPLOYMENT_STATUS.md marked "complete" but no date — unclear if current
+   - No "How to deploy Phase 1 app" guide
+   - IMPLEMENTATION_CHECKLIST.md is detailed but resource-reorganization-specific (Phase 3+ work)
+   - No living architecture document (CURRENT_STATE.md)
+
+**Architecture Decisions Made:**
+
+1. **Validation Before Deep Work:** Phase 0 (this week) must focus on:
+   - Audit: What's actually deployed? (Azure resource inventory)
+   - Test: Does Phase 1 app build?
+   - Fix: Correct pipeline paths (iac → infrastructure)
+   - Document: Create CURRENT_STATE.md (living doc)
+
+2. **Sequencing Strategy:**
+   - Phase 1 (legacy running locally) → Phase 1 (legacy on Azure IaaS) → Phase 2 (legacy on App Service) → Phase 3 (modernize)
+   - Each phase must have: infrastructure code (Bicep), deployment automation (Pipeline), and validation steps
+
+3. **Risk Management:**
+   - If Phase 1 app doesn't build: stop, fix, document why (learning value even in failure)
+   - If IaaS deployment fails: troubleshooting guide and mitigation needed
+   - If database migration breaks: test with backups, rollback plan required
+
+**Key Paths & Artifacts Created:**
+- `.squad/decisions/inbox/morpheus-starting-plan.md` — Comprehensive 25-section infrastructure plan
+- Need to create: `infrastructure/CURRENT_STATE.md`, `phase1-legacy-baseline/BUILD_STATUS.md`, `LOCAL_SETUP.md`
+
+**What This Means for Future Work:**
+- Infrastructure work is well-structured but incomplete — gaps are known and sequenced
+- Phase 0 (validation) is critical and must happen before Phase 1 infrastructure commit
+- Team needs to answer 6 validation questions (buildability, current deployment status, password strategy, etc.)
+- Documentation is a key artifact: living CURRENT_STATE.md replaces static DEPLOYMENT_STATUS.md
+
+**User Preferences Learned:**
+- Clarity over convention — file/folder names tell the story
+- Learning-first — infrastructure docs must explain not just "how to deploy" but "why this architecture"
+- Minimal changes — infrastructure, like code, should be migrations-first
+- Transparency about unknowns — "❓ Unknown" vs "✅ Done" vs "❌ Broken" is valuable
+
+**Related:**
+- Decision document: `.squad/decisions/inbox/morpheus-starting-plan.md`
+- Next action: Team review of plan + answer validation questions
+
+**Status:** Plan proposed; awaiting team review and Phase 0 execution
+
 ### 2026-02-27: Repository Reorganization Complete — Three-Phase Learning Journey
 
 **Context:** Team orchestration completed. Repository structure now maps the modernization learning journey.

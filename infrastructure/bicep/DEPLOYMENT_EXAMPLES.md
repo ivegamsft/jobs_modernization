@@ -38,8 +38,8 @@ Write-Host "Step 1: Deploying Core Network Infrastructure..." -ForegroundColor C
 
 $coreDeployment = New-AzResourceGroupDeployment `
     -ResourceGroupName $ResourceGroupName `
-    -TemplateFile ".\iac\bicep\core\main.bicep" `
-    -TemplateParameterFile ".\iac\bicep\core\parameters.bicepparam" `
+    -TemplateFile ".\infrastructure\bicep\core\main.bicep" `
+    -TemplateParameterFile ".\infrastructure\bicep\core\parameters.bicepparam" `
     -environment $Environment `
     -applicationName "jobsite" `
     -location $Location `
@@ -69,7 +69,7 @@ Write-Host "`nStep 2: Deploying IaaS Resources (VMs + NSGs)..." -ForegroundColor
 
 $iaasDeployment = New-AzResourceGroupDeployment `
     -ResourceGroupName $ResourceGroupName `
-    -TemplateFile ".\iac\bicep\iaas\main.bicep" `
+    -TemplateFile ".\infrastructure\bicep\iaas\main.bicep" `
     -environment $Environment `
     -applicationName "jobsite" `
     -location $Location `
@@ -209,8 +209,8 @@ echo "Deploying Core Network Infrastructure..."
 
 CORE_DEPLOYMENT=$(az deployment group create \
   --resource-group $RESOURCE_GROUP_NAME \
-  --template-file ./iac/bicep/core/main.bicep \
-  --parameters ./iac/bicep/core/parameters.bicepparam \
+  --template-file ./infrastructure/bicep/core/main.bicep \
+  --parameters ./infrastructure/bicep/core/parameters.bicepparam \
   --parameters \
     environment=$ENVIRONMENT \
     applicationName=jobsite \
@@ -238,7 +238,7 @@ read -s -p "Enter SQL Admin Password: " ADMIN_PASSWORD
 
 IAAS_DEPLOYMENT=$(az deployment group create \
   --resource-group $RESOURCE_GROUP_NAME \
-  --template-file ./iac/bicep/iaas/main.bicep \
+  --template-file ./infrastructure/bicep/iaas/main.bicep \
   --parameters \
     environment=$ENVIRONMENT \
     applicationName=jobsite \
@@ -363,7 +363,7 @@ resource "null_resource" "deploy_core" {
     command = <<-EOT
       az deployment group create \
         --resource-group ${var.resource_group_name} \
-        --template-file ./iac/bicep/core/main.bicep \
+        --template-file ./infrastructure/bicep/core/main.bicep \
         --parameters environment=dev location=${var.location}
     EOT
   }
@@ -376,7 +376,7 @@ resource "null_resource" "deploy_iaas" {
     command = <<-EOT
       az deployment group create \
         --resource-group ${var.resource_group_name} \
-        --template-file ./iac/bicep/iaas/main.bicep \
+        --template-file ./infrastructure/bicep/iaas/main.bicep \
         --parameters \
           environment=dev \
           location=${var.location} \
@@ -399,13 +399,13 @@ If you prefer Azure Portal:
 ### Step 1: Deploy Core Network
 
 1. Navigate to Azure Portal → Resource Groups → Create
-2. Go to: `iac/bicep/core/main.bicep`
+2. Go to: `infrastructure/bicep/core/main.bicep`
 3. Deploy using Template Deployment
 4. Note the outputs (Subnet IDs, NAT Gateway IP)
 
 ### Step 2: Deploy IaaS
 
-1. Go to: `iac/bicep/iaas/main.bicep`
+1. Go to: `infrastructure/bicep/iaas/main.bicep`
 2. Provide parameters:
    - `frontendSubnetId`: From Core deployment
    - `dataSubnetId`: From Core deployment

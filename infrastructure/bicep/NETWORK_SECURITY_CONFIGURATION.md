@@ -342,10 +342,10 @@ param allowedRdpIps array = [
 
 ## Files Location
 
-- **IaaS Bicep Module:** [iac/bicep/iaas/iaas-resources.bicep](./iaas/iaas-resources.bicep)
-- **Core Network Module:** [iac/bicep/core/core-resources.bicep](./core/core-resources.bicep)
-- **Main IaaS Module:** [iac/bicep/iaas/main.bicep](./iaas/main.bicep)
-- **Main Core Module:** [iac/bicep/core/main.bicep](./core/main.bicep)
+- **IaaS Bicep Module:** [infrastructure/bicep/iaas/iaas-resources.bicep](./iaas/iaas-resources.bicep)
+- **Core Network Module:** [infrastructure/bicep/core/core-resources.bicep](./core/core-resources.bicep)
+- **Main IaaS Module:** [infrastructure/bicep/iaas/main.bicep](./iaas/main.bicep)
+- **Main Core Module:** [infrastructure/bicep/core/main.bicep](./core/main.bicep)
 
 ## Related Documentation
 

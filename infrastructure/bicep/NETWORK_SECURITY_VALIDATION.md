@@ -162,10 +162,10 @@ Test-WSMan -ComputerName <SQL_VM_PRIVATE_IP>
 
 Modified Files:
 
-- `iac/bicep/iaas/iaas-resources.bicep` - NSG rules added
-- `iac/bicep/core/core-resources.bicep` - NAT Gateway already configured
+- `infrastructure/bicep/iaas/iaas-resources.bicep` - NSG rules added
+- `infrastructure/bicep/core/core-resources.bicep` - NAT Gateway already configured
 
 Documentation Files:
 
-- `iac/bicep/NETWORK_SECURITY_CONFIGURATION.md` - Detailed configuration guide
-- `iac/bicep/NETWORK_SECURITY_VALIDATION.md` - This file (validation checklist)
+- `infrastructure/bicep/NETWORK_SECURITY_CONFIGURATION.md` - Detailed configuration guide
+- `infrastructure/bicep/NETWORK_SECURITY_VALIDATION.md` - This file (validation checklist)

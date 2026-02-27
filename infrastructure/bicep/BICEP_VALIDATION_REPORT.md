@@ -1,7 +1,7 @@
 # Bicep Implementation Validation Report
 
 **Date**: 2026-01-22  
-**Source**: Review of existing Bicep templates in `iac/bicep/` against `tasks.md`  
+**Source**: Review of existing Bicep templates in `infrastructure/bicep/` against `tasks.md`  
 **Status**: ⚠️ PARTIAL IMPLEMENTATION - Critical gaps identified
 
 ---

@@ -215,10 +215,10 @@ Enter-PSSession -ComputerName $sql_ip -Credential (Get-Credential)
 
 ## 📚 Documentation References
 
-- [Network Security Configuration](./iac/bicep/NETWORK_SECURITY_CONFIGURATION.md)
-- [Network Security Validation](./iac/bicep/NETWORK_SECURITY_VALIDATION.md)
-- [Visual Network Reference](./iac/bicep/NETWORK_VISUAL_REFERENCE.md)
-- [Deployment Examples](./iac/bicep/DEPLOYMENT_EXAMPLES.md)
+- [Network Security Configuration](./infrastructure/bicep/NETWORK_SECURITY_CONFIGURATION.md)
+- [Network Security Validation](./infrastructure/bicep/NETWORK_SECURITY_VALIDATION.md)
+- [Visual Network Reference](./infrastructure/bicep/NETWORK_VISUAL_REFERENCE.md)
+- [Deployment Examples](./infrastructure/bicep/DEPLOYMENT_EXAMPLES.md)
 
 ---
 

@@ -57,8 +57,8 @@ Edit `paas/parameters.bicepparam`:
 param environment = 'dev'              # [ ] Updated
 param applicationName = 'jobsite'      # [ ] Updated (if different)
 param location = 'eastus'              # [ ] Updated
-  --template-file iac/bicep/paas/main.bicep \
-  --parameters iac/bicep/paas/parameters.bicepparam \
+  --template-file infrastructure/bicep/paas/main.bicep \
+  --parameters infrastructure/bicep/paas/parameters.bicepparam \
 param appServiceSku = 'S1'             # [ ] Updated (B1 for dev, P1V2 for prod)
 
 # SQL Database
@@ -86,7 +86,7 @@ param privateDnsZoneName = 'jobsite.internal' # [ ] Keep as-is
 ### ✅ Step 3: Validate Bicep Template
 
 ```bash
-cd iac/bicep/paas
+cd infrastructure/bicep/paas
 az bicep build --file main.bicep
 ```
 
@@ -109,8 +109,8 @@ Expected output:
 ```bash
 az deployment group validate \
   --resource-group jobsite-paas-rg \
-  --template-file iac/bicep/paas/main.bicep \
-  --parameters iac/bicep/paas/parameters.bicepparam
+  --template-file infrastructure/bicep/paas/main.bicep \
+  --parameters infrastructure/bicep/paas/parameters.bicepparam
 ```
 
 Expected: `Deployment template validation succeeded`
@@ -122,8 +122,8 @@ Expected: `Deployment template validation succeeded`
 ```bash
 az deployment what-if \
   --resource-group jobsite-paas-rg \
-  --template-file iac/bicep/paas/main.bicep \
-  --parameters iac/bicep/paas/parameters.bicepparam
+  --template-file infrastructure/bicep/paas/main.bicep \
+  --parameters infrastructure/bicep/paas/parameters.bicepparam
 ```
 
 Review the output:
@@ -144,8 +144,8 @@ Review the output:
 ```bash
 az deployment group create \
   --resource-group jobsite-paas-rg \
-  --template-file iac/bicep/paas/main.bicep \
-  --parameters iac/bicep/paas/parameters.bicepparam \
+  --template-file infrastructure/bicep/paas/main.bicep \
+  --parameters infrastructure/bicep/paas/parameters.bicepparam \
   --name paas-deployment
 ```
 

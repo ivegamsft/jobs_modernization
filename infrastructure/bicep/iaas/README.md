@@ -110,7 +110,7 @@ This module **depends on core infrastructure** (`../core/main.bicep`). Deploy th
 
 ```bash
 # Navigate to module
-cd iac/bicep/iaas
+cd infrastructure/bicep/iaas
 
 # Deploy with parameters
 az deployment group create \

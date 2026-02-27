@@ -8,22 +8,21 @@ The core infrastructure module deploys the foundational networking, security, an
 
 ### 1. Virtual Network (VNet)
 
-- **Address Space**: 10.50.0.0/16
-- **Region**: Configurable (default: eastus)
+- **Address Space**: 10.50.0.0/21 (2,048 IPs)
+- **Region**: Configurable (default: swedencentral)
 - **Purpose**: Provides isolated network for all resources
 
-### 2. Subnets (/27 each)
+### 2. Subnets
 
-| Subnet            | CIDR Block     | Purpose               | NAT Gateway |
-| ----------------- | -------------- | --------------------- | ----------- |
-| Frontend          | 10.50.0.0/27   | VMSS with IIS         | ✓           |
-| Data              | 10.50.0.32/27  | SQL Server VM         | ✓           |
-| Gateway           | 10.50.0.64/27  | VPN Gateway           | ✗           |
-| Private Endpoints | 10.50.0.96/27  | PaaS private links    | ✓           |
-| GitHub Runners    | 10.50.0.128/27 | Self-hosted runners   | ✓           |
-| AKS               | 10.50.0.160/27 | Future AKS cluster    | ✓           |
-| Container Apps    | 10.50.0.192/27 | Future Container Apps | ✓           |
-| App Gateway       | 10.50.224.0/27 | App Gateway WAF_v2    | ✗           |
+| Subnet            | CIDR Block       | Purpose               | NAT Gateway |
+| ----------------- | ---------------- | --------------------- | ----------- |
+| Frontend          | 10.50.0.0/24     | App Gateway / VMSS    | ✓           |
+| Data              | 10.50.1.0/26     | SQL Server VM         | ✓           |
+| GitHub Runners    | 10.50.1.64/26    | Self-hosted runners   | ✓           |
+| Private Endpoints | 10.50.1.128/27   | PaaS private links    | ✓           |
+| GatewaySubnet     | 10.50.1.160/27   | VPN Gateway           | ✗           |
+| AKS               | 10.50.2.0/23     | AKS cluster nodes     | ✓           |
+| Container Apps    | 10.50.4.0/26     | Container Apps Env    | ✓           |
 
 ### 3. NAT Gateway
 
@@ -101,7 +100,7 @@ AzureDiagnostics
 │                    Azure Subscription                    │
 ├─────────────────────────────────────────────────────────┤
 │  ┌──────────────────────────────────────────────────┐   │
-│  │          VNet (10.50.0.0/16)                     │   │
+│  │          VNet (10.50.0.0/21)                     │   │
 │  │  ┌──────────────────────────────────────────┐   │   │
 │  │  │  Frontend Subnet   (10.50.0.0/27)        │   │   │
 │  │  │  ├─ VMSS Instance #1                     │   │   │
@@ -172,7 +171,7 @@ AzureDiagnostics
 ### Optional Parameters
 
 - `location`: Azure region (default: eastus)
-- `vnetAddressPrefix`: VNet CIDR (default: 10.50.0.0/16)
+- `vnetAddressPrefix`: VNet CIDR (default: 10.50.0.0/21)
 - `vpnClientAddressPool`: VPN client pool (default: 10.70.0.0/24)
 - `tags`: Custom resource tags
 

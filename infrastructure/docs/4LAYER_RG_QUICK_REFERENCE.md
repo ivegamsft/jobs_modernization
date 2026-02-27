@@ -309,7 +309,7 @@ A: ~$30/month for App Gateway. Build agents already exist (cost unchanged). One-
 ## Bicep File Updates Required
 
 ```
-iac/bicep/
+infrastructure/bicep/
 ├── core/
 │   └── main.bicep (no changes)
 ├── iaas/
@@ -376,7 +376,7 @@ iac/bicep/
 
 📋 **Task Lists**:
 
-- [appV2/MIGRATION_CHECKLIST.md](appV2/MIGRATION_CHECKLIST.md) - Task-by-task execution checklist
+- [IMPLEMENTATION_CHECKLIST.md](IMPLEMENTATION_CHECKLIST.md) - Task-by-task execution checklist
 
 🔍 **Monitoring**:
 

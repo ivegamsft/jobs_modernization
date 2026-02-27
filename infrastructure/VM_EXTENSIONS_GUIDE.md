@@ -502,7 +502,7 @@ module agentsResources './agents-resources.bicep' = {
 1. **Deploy IaaS VMs:**
 
    ```powershell
-   cd C:\git\jobs_modernization\iac
+   cd C:\git\jobs_modernization\infrastructure
    .\deploy-iaas-clean.ps1
    ```
 

@@ -38,12 +38,12 @@ SQL VM:  RDP to 51.12.86.155:23389  [port mapping configured via NSG]
 
 ### Main Deployments
 
-1. **Core Infrastructure** (`iac/bicep/core/main.bicep`)
+1. **Core Infrastructure** (`infrastructure/bicep/core/main.bicep`)
    - Scope: Subscription
    - Creates: jobsite-core-dev-rg
    - Resources: VNet, Subnets, NAT Gateway, ACR, Key Vault, Log Analytics
 
-2. **IaaS Infrastructure** (`iac/bicep/iaas/main.bicep`)
+2. **IaaS Infrastructure** (`infrastructure/bicep/iaas/main.bicep`)
    - Scope: Subscription
    - Creates: jobsite-iaas-dev-rg
    - Resources: Web VM, SQL VM, NSGs
@@ -89,7 +89,7 @@ SQL VM:  RDP to 51.12.86.155:23389  [port mapping configured via NSG]
 az deployment sub create `
   --name jobsite-core-$(Get-Date -Format 'yyyyMMddHHmmss') `
   --location swedencentral `
-  --template-file iac/bicep/core/main.bicep
+  --template-file infrastructure/bicep/core/main.bicep
 ```
 
 ### Deploy IaaS Infrastructure
@@ -98,7 +98,7 @@ az deployment sub create `
 az deployment sub create `
   --name jobsite-iaas-$(Get-Date -Format 'yyyyMMddHHmmss') `
   --location swedencentral `
-  --template-file iac/bicep/iaas/main.bicep `
+  --template-file infrastructure/bicep/iaas/main.bicep `
   --parameters allowedRdpIps="['50.235.23.34/32']"
 ```
 

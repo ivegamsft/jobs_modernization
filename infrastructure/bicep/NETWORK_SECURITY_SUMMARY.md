@@ -61,13 +61,13 @@
 
 ### Bicep Infrastructure Files
 
-**[iac/bicep/iaas/iaas-resources.bicep](../iaas/iaas-resources.bicep)**
+**[infrastructure/bicep/iaas/iaas-resources.bicep](../iaas/iaas-resources.bicep)**
 
 - Added NSG rule for Web VM to SQL VM communication (port 1433)
 - Frontend NSG: SQL outbound rule to Data Subnet
 - Data NSG: SQL inbound from Frontend, VirtualNetwork, RDP, WinRM
 
-**[iac/bicep/core/core-resources.bicep](../core/core-resources.bicep)**
+**[infrastructure/bicep/core/core-resources.bicep](../core/core-resources.bicep)**
 
 - ✅ Already configured: NAT Gateway with static public IP
 - ✅ Already configured: NAT Gateway associated to both subnets

@@ -138,7 +138,7 @@ See [QUICK_REFERENCE_CARD.md](QUICK_REFERENCE_CARD.md) for:
 ## 📂 File Structure
 
 ```
-iac/bicep/
+infrastructure/bicep/
 │
 ├── README.md                           ← This file
 ├── QUICK_START.md                      ← Deployment guide (5 min)
@@ -340,8 +340,8 @@ az deployment group show \
 
 ### Application Deployment
 
-- [../../appV2/README.md](../../appV2/README.md) - .NET application
-- [../../appV3/README.md](../../appV3/README.md) - Python application
+- [../../phase3-modernization/api-dotnet/README.md](../../phase3-modernization/api-dotnet/README.md) - .NET application
+- [../../phase3-modernization/api-python/README.md](../../phase3-modernization/api-python/README.md) - Python application
 
 ---
 

@@ -23,7 +23,6 @@ Deployment and utility scripts:
 ### `docs/`
 Comprehensive infrastructure documentation:
 - **4LAYER_RG_QUICK_REFERENCE.md** — Resource group organization strategy
-- **CREDENTIALS_AND_NEXT_STEPS.md** — Deployment credentials and next steps
 - **DEPLOYMENT_COMPLETE.md** — IaaS deployment completion summary
 - **DEPLOYMENT_SUMMARY.md** — Infrastructure deployment status
 - **DOCUMENTATION_PACKAGE_README.md** — Index of infrastructure docs
