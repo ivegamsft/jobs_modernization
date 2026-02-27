@@ -171,3 +171,37 @@ Repository now clearly communicates the three-phase modernization journey. Folde
 **Team Awareness:** Merged decision to `.squad/decisions.md`. All agents now aware docs were cleaned.
 
 **Status:** ✅ Complete, committed, merged to decisions
+
+### 2026-02-27: Infrastructure Script Cleanup — 5 Deleted, 7 Fixed, 12 Consolidated
+
+**Context:** User directive to clean up scattered deployment scripts in `infrastructure/`. Audited all 20 script files across 4 locations.
+
+**Scripts Deleted (5):**
+1. `deploy-app-layers.ps1` — Hardcoded `c:\git\jobs_modernization\iac\` paths (lines 101, 151), weak password generation ("Aa1" suffix), superseded by individual deploy-iaas-clean.ps1 and deploy-paas-simple.ps1
+2. `deploy-iaas-v2.ps1` — Hardcoded `c:\git\...\iac\` path (line 113), prints passwords to console, superseded by deploy-iaas-clean.ps1
+3. `redeploy-iaas-wfe.ps1` — One-time troubleshooting script for group-level redeployment, covered by main deploy script
+4. `scripts/CLEANUP_SECRETS.ps1` — One-time git history cleanup tool, contained redacted password patterns, hardcoded path, already been used
+5. `scripts/cleanup_secrets.py` — Python duplicate of above, same issues
+
+**Scripts Fixed (7):**
+1. `deploy-core.ps1` — Changed `$PSScriptRoot\scripts\` → `$PSScriptRoot\` (now co-located), `./bicep/` → `$PSScriptRoot\..\bicep\`, replaced hardcoded KV name with dynamic lookup
+2. `deploy-iaas-clean.ps1` — Replaced weak inline password gen (12 chars + "Aa1") with dot-sourced `New-SecurePassword.ps1` (20 chars, proper complexity), fixed template/params paths to `$PSScriptRoot\..`
+3. `deploy-paas-simple.ps1` — `c:\git\jobs_modernization\iac\bicep\paas\` → `$PSScriptRoot\..\bicep\paas\`
+4. `deploy-vpn.ps1` — Removed `Set-Location "c:\git\...\iac\bicep\core"`, used `$PSScriptRoot\..\bicep\core\` in params
+5. `deploy-agents.ps1` — `./bicep/agents/main.bicep` → `$PSScriptRoot\..\bicep\agents\main.bicep`
+6. `diagnose.ps1` — `c:\git\...\iac\bicep\iaas\` → `$PSScriptRoot\..\bicep\iaas\`
+7. `update-core-add-containers.ps1` — `c:\git\...\iac\bicep\core\` → `$PSScriptRoot\..\bicep\core\`
+
+**Scripts Consolidated (12 moved):**
+- All 10 root-level scripts moved from `infrastructure/` → `infrastructure/scripts/`
+- `bicep/core/create-nat-inbound-rules.ps1` → `scripts/create-nat-inbound-rules.ps1`
+- All paths updated to use `$PSScriptRoot`-based references so scripts work regardless of CWD
+
+**Scripts Kept In Place (3):**
+- `scripts/Deploy-Bicep.ps1` — Main orchestrator, already in scripts/
+- `scripts/New-SecurePassword.ps1` — Shared utility, already in scripts/
+- `bicep/iaas/scripts/iis-install.ps1` — VM extension script, must stay with Bicep template
+
+**Key Pattern:** All scripts now use `$PSScriptRoot\..` to resolve paths to the infrastructure root. No hardcoded absolute paths remain.
+
+**Status:** ✅ Complete, committed
