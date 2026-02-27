@@ -9,6 +9,38 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-02-27: Repository Reorganization Complete — Three-Phase Learning Journey
+
+**Context:** Team orchestration completed. Repository structure now maps the modernization learning journey.
+
+**Key Changes:**
+- **Repository restructured** into three-phase folders: phase1-legacy-baseline, phase2-azure-migration, phase3-modernization
+- **440+ files moved** with Git history preserved across all operations
+- **Root cleaned** from 15+ markdown files to ~3 core files
+- **App versions renamed:** appV1 → appV1-original, appV1.5-JobsSiteWeb → appV1.5-buildable, appV2 → api-dotnet, appV3 → api-python
+- **Infrastructure consolidated:** 9 infrastructure markdown docs moved to infrastructure/docs/
+- **New folders:** infrastructure/ (renamed from iac/), docs/ (general learning materials)
+- **Case normalization:** Database/ → database/ (consistency)
+
+**What This Means for Future Work:**
+- Phase 1 focus: Get appV1.5 (buildable baseline) running — study appV1 to understand legacy issues
+- Phase 2 focus: Host Phase 1 app on Azure App Service + SQL PaaS (migration, minimal code changes)
+- Phase 3 focus: Build modern API (appV2/appV3) + React UI alongside legacy app (strangler fig pattern)
+- **Migrate-Then-Modernize:** Strict principle — Phase 2 is migration, Phase 3 is modernization. No code changes to legacy app.
+
+**Organizational Impact:**
+- All future team members will find the repository structure self-documenting
+- Phase READMEs provide clear entry points for learners
+- Supporting documentation consolidated and organized
+- Team decisions recorded in `.squad/decisions.md` (merged from inbox)
+
+**Related:**
+- Orchestration logs: `.squad/orchestration-log/2026-02-27T01-36-morpheus.md`, `.squad/orchestration-log/2026-02-27T01-36-dozer.md`
+- Decision log: `.squad/decisions.md`
+- Session log: `.squad/log/2026-02-27T01-36-repo-reorg.md`
+
+**Status:** ✅ Complete — Repository ready for Phase 1 work
+
 ### 2026-02-27: Repository Structure Analysis & Reorganization Proposal
 
 **Context:** First architectural review of repository organization.

@@ -9,6 +9,39 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-02-27: Repository Reorganization Complete — Infrastructure Consolidated, Phase Structure Ready
+
+**Context:** Team orchestration complete. Repository reorganization from Morpheus (proposed) + Dozer (executed) is finalized and documented.
+
+**What Changed:**
+- Repository now organized into three-phase learning journey
+- 440+ files moved with Git history preserved
+- Root cleaned from 15+ markdown files to 3 core files
+- 9 infrastructure markdown docs consolidated to `infrastructure/docs/`
+- Utility files organized: RDP connection files, cleanup scripts → infrastructure/
+- 8 new README files created for phase guidance
+
+**Key Infrastructure Changes:**
+- `iac/` → `infrastructure/` (all Bicep, Terraform, scripts consolidated)
+- All deployment documentation (9 files) moved to `infrastructure/docs/`
+- Added `infrastructure/README.md` explaining IaC structure
+- Cleanup scripts organized to `infrastructure/scripts/`
+- RDP connection files moved to `infrastructure/`
+
+**Windows Git Technique Learnings:**
+- `git mv` is primary choice (preserves history)
+- Move-Item + git add for directory renames (shows "R" in status, not "D+A")
+- Temp directory technique needed for case-only renames on Windows (Database → database)
+- Verification: Always check `git status` after each operation to confirm "R" not "D+A"
+
+**Team Synchronization:**
+- Morpheus documented architectural analysis and decision-making
+- Scribe wrote orchestration logs, merged decision inbox, updated agent histories
+- All team members now aware of reorganization via `.squad/decisions.md`
+- Future work ready to proceed with clear phase structure
+
+**Status:** ✅ Reorganization complete, committed, all agents synchronized
+
 ### 2026-02-27: Repository Reorganization Execution
 
 **Task:** Executed Morpheus's approved repository reorganization to transform the repo into a three-phase learning journey.
