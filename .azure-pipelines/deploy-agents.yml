@@ -4,7 +4,7 @@ trigger:
     - main
   paths:
     include:
-    - iac/bicep/agents/**
+    - infrastructure/bicep/agents/**
     - azure-pipelines/deploy-agents.yml
 
 pr:
@@ -13,7 +13,7 @@ pr:
     - main
   paths:
     include:
-    - iac/bicep/agents/**
+    - infrastructure/bicep/agents/**
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -48,7 +48,7 @@ stages:
                 az deployment sub create \
                   --name "$(deploymentName)-$(environment)-$(Build.BuildId)" \
                   --location $(location) \
-                  --template-file "./iac/bicep/agents/main.bicep" \
+                  --template-file "./infrastructure/bicep/agents/main.bicep" \
                   --parameters \
                     environment=$(environment) \
                     agentCount=$(agentCount)

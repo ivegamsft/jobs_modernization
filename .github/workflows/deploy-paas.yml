@@ -4,12 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'iac/bicep/paas/**'
+      - 'infrastructure/bicep/paas/**'
       - '.github/workflows/deploy-paas.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'iac/bicep/paas/**'
+      - 'infrastructure/bicep/paas/**'
   workflow_dispatch:
     inputs:
       environment:
@@ -50,7 +50,7 @@ jobs:
             az deployment sub create \
               --name "jobsite-paas-${ENVIRONMENT}" \
               --location "swedencentral" \
-              --template-file "./iac/bicep/paas/main.bicep" \
+              --template-file "./infrastructure/bicep/paas/main.bicep" \
               --parameters \
                 environment="$ENVIRONMENT" \
                 appServiceSku="$APP_SERVICE_SKU"

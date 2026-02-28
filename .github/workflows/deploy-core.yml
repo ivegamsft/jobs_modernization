@@ -4,12 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'iac/bicep/core/**'
+      - 'infrastructure/bicep/core/**'
       - '.github/workflows/deploy-core.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'iac/bicep/core/**'
+      - 'infrastructure/bicep/core/**'
   workflow_dispatch:
     inputs:
       environment:
@@ -50,7 +50,7 @@ jobs:
             az deployment sub create \
               --name "jobsite-core-${ENVIRONMENT}" \
               --location "$LOCATION" \
-              --template-file "./iac/bicep/core/main.bicep" \
+              --template-file "./infrastructure/bicep/core/main.bicep" \
               --parameters \
                 environment="$ENVIRONMENT" \
                 location="$LOCATION"

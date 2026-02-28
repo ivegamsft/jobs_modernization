@@ -4,12 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'iac/bicep/iaas/**'
+      - 'infrastructure/bicep/iaas/**'
       - '.github/workflows/deploy-iaas.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'iac/bicep/iaas/**'
+      - 'infrastructure/bicep/iaas/**'
   workflow_dispatch:
     inputs:
       environment:
@@ -55,7 +55,7 @@ jobs:
             az deployment sub create \
               --name "jobsite-iaas-${ENVIRONMENT}" \
               --location "swedencentral" \
-              --template-file "./iac/bicep/iaas/main.bicep" \
+              --template-file "./infrastructure/bicep/iaas/main.bicep" \
               --parameters \
                 environment="$ENVIRONMENT" \
                 vmSize="$VM_SIZE" \

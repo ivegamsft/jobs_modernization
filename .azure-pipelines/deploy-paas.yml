@@ -4,7 +4,7 @@ trigger:
     - main
   paths:
     include:
-    - iac/bicep/paas/**
+    - infrastructure/bicep/paas/**
     - azure-pipelines/deploy-paas.yml
 
 pr:
@@ -13,7 +13,7 @@ pr:
     - main
   paths:
     include:
-    - iac/bicep/paas/**
+    - infrastructure/bicep/paas/**
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -48,7 +48,7 @@ stages:
                 az deployment sub create \
                   --name "$(deploymentName)-$(environment)-$(Build.BuildId)" \
                   --location $(location) \
-                  --template-file "./iac/bicep/paas/main.bicep" \
+                  --template-file "./infrastructure/bicep/paas/main.bicep" \
                   --parameters \
                     environment=$(environment) \
                     appServiceSku=$(appServiceSku)

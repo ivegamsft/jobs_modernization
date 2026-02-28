@@ -4,7 +4,7 @@ trigger:
     - main
   paths:
     include:
-    - iac/bicep/iaas/**
+    - infrastructure/bicep/iaas/**
     - azure-pipelines/deploy-iaas.yml
 
 pr:
@@ -13,7 +13,7 @@ pr:
     - main
   paths:
     include:
-    - iac/bicep/iaas/**
+    - infrastructure/bicep/iaas/**
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -49,7 +49,7 @@ stages:
                 az deployment sub create \
                   --name "$(deploymentName)-$(environment)-$(Build.BuildId)" \
                   --location $(location) \
-                  --template-file "./iac/bicep/iaas/main.bicep" \
+                  --template-file "./infrastructure/bicep/iaas/main.bicep" \
                   --parameters \
                     environment=$(environment) \
                     vmSize=$(vmSize) \

@@ -4,14 +4,14 @@ on:
   push:
     branches: [main]
     paths:
-      - 'iac/bicep/core/vpn-gateway.bicep'
-      - 'iac/bicep/core/deploy-vpn.bicep'
+      - 'infrastructure/bicep/core/vpn-gateway.bicep'
+      - 'infrastructure/bicep/core/deploy-vpn.bicep'
       - '.github/workflows/deploy-vpn.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'iac/bicep/core/vpn-gateway.bicep'
-      - 'iac/bicep/core/deploy-vpn.bicep'
+      - 'infrastructure/bicep/core/vpn-gateway.bicep'
+      - 'infrastructure/bicep/core/deploy-vpn.bicep'
   workflow_dispatch:
     inputs:
       environment:
@@ -47,7 +47,7 @@ jobs:
             az deployment sub create \
               --name "jobsite-vpn-${ENVIRONMENT}" \
               --location "swedencentral" \
-              --template-file "./iac/bicep/core/deploy-vpn.bicep" \
+              --template-file "./infrastructure/bicep/core/deploy-vpn.bicep" \
               --parameters \
                 environment="$ENVIRONMENT"
 

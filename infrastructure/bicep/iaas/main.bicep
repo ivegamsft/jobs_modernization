@@ -16,6 +16,7 @@ param adminPassword string = newGuid()
 param vmSize string = 'Standard_D2ds_v6'
 param sqlVmSize string = 'Standard_D4ds_v6'
 param allowedRdpIps array = []
+param coreVnetName string
 param tags object = {
   Application: 'JobSite'
   Environment: environment
@@ -42,7 +43,7 @@ resource coreResourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' exist
 
 // Get reference to the VNet from core RG
 resource vnet 'Microsoft.Network/virtualNetworks@2023-11-01' existing = {
-  name: 'jobsite-dev-vnet-ubzfsgu4p5eli'
+  name: coreVnetName
   scope: coreResourceGroup
 }
 

@@ -4,12 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'iac/bicep/agents/**'
+      - 'infrastructure/bicep/agents/**'
       - '.github/workflows/deploy-agents.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'iac/bicep/agents/**'
+      - 'infrastructure/bicep/agents/**'
   workflow_dispatch:
     inputs:
       environment:
@@ -50,7 +50,7 @@ jobs:
             az deployment sub create \
               --name "jobsite-agents-${ENVIRONMENT}" \
               --location "swedencentral" \
-              --template-file "./iac/bicep/agents/main.bicep" \
+              --template-file "./infrastructure/bicep/agents/main.bicep" \
               --parameters \
                 environment="$ENVIRONMENT" \
                 agentCount=$AGENT_COUNT

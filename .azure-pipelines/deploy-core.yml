@@ -4,7 +4,7 @@ trigger:
     - main
   paths:
     include:
-    - iac/bicep/core/**
+    - infrastructure/bicep/core/**
     - azure-pipelines/deploy-core.yml
 
 pr:
@@ -13,7 +13,7 @@ pr:
     - main
   paths:
     include:
-    - iac/bicep/core/**
+    - infrastructure/bicep/core/**
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -47,7 +47,7 @@ stages:
                 az deployment sub create \
                   --name "$(deploymentName)-$(environment)-$(Build.BuildId)" \
                   --location $(location) \
-                  --template-file "./iac/bicep/core/main.bicep" \
+                  --template-file "./infrastructure/bicep/core/main.bicep" \
                   --parameters \
                     environment=$(environment) \
                     location=$(location)

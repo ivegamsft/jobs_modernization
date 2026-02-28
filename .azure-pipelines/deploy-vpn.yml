@@ -4,8 +4,8 @@ trigger:
     - main
   paths:
     include:
-    - iac/bicep/core/vpn-gateway.bicep
-    - iac/bicep/core/deploy-vpn.bicep
+    - infrastructure/bicep/core/vpn-gateway.bicep
+    - infrastructure/bicep/core/deploy-vpn.bicep
     - azure-pipelines/deploy-vpn.yml
 
 pr:
@@ -14,8 +14,8 @@ pr:
     - main
   paths:
     include:
-    - iac/bicep/core/vpn-gateway.bicep
-    - iac/bicep/core/deploy-vpn.bicep
+    - infrastructure/bicep/core/vpn-gateway.bicep
+    - infrastructure/bicep/core/deploy-vpn.bicep
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -49,7 +49,7 @@ stages:
                 az deployment sub create \
                   --name "$(deploymentName)-$(environment)-$(Build.BuildId)" \
                   --location $(location) \
-                  --template-file "./iac/bicep/core/deploy-vpn.bicep" \
+                  --template-file "./infrastructure/bicep/core/deploy-vpn.bicep" \
                   --parameters \
                     environment=$(environment)
 
