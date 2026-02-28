@@ -62,3 +62,39 @@
 - See `.squad/decisions.md` for complete decision log
 
 **Status:** ✅ Repository ready for Phase 1 work
+
+### 2026-02-28: Build Verification Tests Implemented — 5/5 Passing
+
+**Context:** First automated test execution for Phase 1. Converted TEST_PLAN.md Section 1 (BLD-001 through BLD-005) into executable PowerShell tests.
+
+**What Was Done:**
+- Created `phase1-legacy-baseline/tests/Build-Verification.ps1` (5 tests, self-contained harness)
+- Created `phase1-legacy-baseline/tests/README.md` (usage docs)
+- All 5 tests pass on current machine (VS 2022 Enterprise MSBuild)
+
+**Test Results (first run):**
+- BLD-001: Project file exists — PASS (JobsSiteWeb.csproj found, no .sln yet)
+- BLD-002: NuGet restore — PASS (packages already committed to repo)
+- BLD-003: Debug build — PASS (0 errors)
+- BLD-004: Release build — PASS (0 errors)
+- BLD-005: Build output — PASS (bin\JobsSiteWeb.dll, 52.5 KB)
+
+**Key Technical Decisions:**
+- **MSBuild discovery:** Uses vswhere first, then well-known VS paths, then PATH fallback
+- **NuGet handling:** Tries nuget.exe first; falls back to verifying packages/ already present (they're committed)
+- **No .sln required:** Tests work against .csproj directly; will auto-detect .sln when Tank creates it
+- **Clean build:** Wipes bin/obj before Debug build for reliability
+- **CI/CD ready:** Exit code 0/1, structured PSCustomObject output, no external dependencies
+
+**Key File Paths:**
+- Tests: `phase1-legacy-baseline/tests/Build-Verification.ps1`
+- Docs: `phase1-legacy-baseline/tests/README.md`
+- Project: `phase1-legacy-baseline/appV1.5-buildable/JobsSiteWeb.csproj`
+- Output: `phase1-legacy-baseline/appV1.5-buildable/bin/JobsSiteWeb.dll`
+
+**Gotchas Found:**
+- PowerShell file encoding matters: em-dash (U+2014) in source causes parse errors on some PowerShell hosts — use ASCII dashes only
+- `$PSScriptRoot` can be empty when script is invoked certain ways — need explicit fallback via `$MyInvocation.MyCommand.Path`
+- nuget.exe is NOT in PATH on this machine — fallback to checking committed packages/ dir is essential
+
+**Status:** ✅ Build verification automated, all tests green
