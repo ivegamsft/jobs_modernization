@@ -118,18 +118,20 @@
       <DependentUpon>ExperienceLevelManager.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Content Include="App_Code\BOL\Company.cs" />
-    <Content Include="App_Code\BOL\Country.cs" />
-    <Content Include="App_Code\BOL\EducationLevel.cs" />
-    <Content Include="App_Code\BOL\ExperienceLevel.cs" />
-    <Content Include="App_Code\BOL\JobPosting.cs" />
-    <Content Include="App_Code\BOL\JobType.cs" />
-    <Content Include="App_Code\BOL\MyJob.cs" />
-    <Content Include="App_Code\BOL\MyResume.cs" />
-    <Content Include="App_Code\BOL\MySearch.cs" />
-    <Content Include="App_Code\BOL\Resume.cs" />
-    <Content Include="App_Code\BOL\State.cs" />
-    <Content Include="App_Code\DAL\DBAccess.cs" />
+    <Compile Include="App_Code\BOL\Company.cs" />
+    <Compile Include="App_Code\BOL\Country.cs" />
+    <Compile Include="App_Code\BOL\EducationLevel.cs" />
+    <Compile Include="App_Code\BOL\ExperienceLevel.cs" />
+    <Compile Include="App_Code\BOL\JobPosting.cs" />
+    <Compile Include="App_Code\BOL\JobType.cs" />
+    <Compile Include="App_Code\BOL\MyJob.cs" />
+    <Compile Include="App_Code\BOL\MyResume.cs" />
+    <Compile Include="App_Code\BOL\MySearch.cs" />
+    <Compile Include="App_Code\BOL\Resume.cs" />
+    <Compile Include="App_Code\BOL\State.cs" />
+    <Compile Include="App_Code\DAL\DBAccess.cs" />
+    <Compile Include="App_Code\ProfileCommon.cs" />
+    <Compile Include="App_Code\BasePage.cs" />
     <Compile Include="changepassword.aspx.cs">
       <DependentUpon>changepassword.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -234,6 +236,90 @@
     <Compile Include="UserControls\Statistics.ascx.cs">
       <DependentUpon>Statistics.ascx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="changepassword.aspx.designer.cs">
+      <DependentUpon>changepassword.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="customerrorpage.aspx.designer.cs">
+      <DependentUpon>customerrorpage.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="default.aspx.designer.cs">
+      <DependentUpon>default.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="login.aspx.designer.cs">
+      <DependentUpon>login.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="register.aspx.designer.cs">
+      <DependentUpon>register.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\EducationLevelsManager.aspx.designer.cs">
+      <DependentUpon>EducationLevelsManager.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Admin\ExperienceLevelManager.aspx.designer.cs">
+      <DependentUpon>ExperienceLevelManager.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CustomErrorPages\NotAuthorized.aspx.designer.cs">
+      <DependentUpon>NotAuthorized.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CustomErrorPages\profilenotfound.aspx.designer.cs">
+      <DependentUpon>profilenotfound.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="employer\AddEditPosting.aspx.designer.cs">
+      <DependentUpon>AddEditPosting.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="employer\companyprofile.aspx.designer.cs">
+      <DependentUpon>companyprofile.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="employer\jobpostings.aspx.designer.cs">
+      <DependentUpon>jobpostings.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="employer\MyFavorites.aspx.designer.cs">
+      <DependentUpon>MyFavorites.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="employer\resumesearch.aspx.designer.cs">
+      <DependentUpon>resumesearch.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="employer\viewresume.aspx.designer.cs">
+      <DependentUpon>viewresume.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="jobseeker\jobsearch.aspx.designer.cs">
+      <DependentUpon>jobsearch.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="jobseeker\MyFavorites.aspx.designer.cs">
+      <DependentUpon>MyFavorites.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="jobseeker\postresume.aspx.designer.cs">
+      <DependentUpon>postresume.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="jobseeker\viewcompanyprofile.aspx.designer.cs">
+      <DependentUpon>viewcompanyprofile.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="jobseeker\viewjobposting.aspx.designer.cs">
+      <DependentUpon>viewjobposting.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\DisplayModeController.ascx.designer.cs">
+      <DependentUpon>DisplayModeController.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\LatestJobs.ascx.designer.cs">
+      <DependentUpon>LatestJobs.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\MyJobs.ascx.designer.cs">
+      <DependentUpon>MyJobs.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\MyResumes.ascx.designer.cs">
+      <DependentUpon>MyResumes.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\MySearches.ascx.designer.cs">
+      <DependentUpon>MySearches.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\NavigationTree.ascx.designer.cs">
+      <DependentUpon>NavigationTree.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="UserControls\Statistics.ascx.designer.cs">
+      <DependentUpon>Statistics.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="MasterPage.master.designer.cs">
+      <DependentUpon>MasterPage.master</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>

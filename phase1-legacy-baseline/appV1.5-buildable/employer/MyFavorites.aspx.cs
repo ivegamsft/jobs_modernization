@@ -8,7 +8,7 @@ using System.Web.UI.WebControls;
 using System.Web.UI.WebControls.WebParts;
 using System.Web.UI.HtmlControls;
 
-public partial class MyFavorites_aspx : Page
+public partial class employer_MyFavorites_aspx : Page
 {
     protected void Page_Load(object sender, EventArgs e)
     {

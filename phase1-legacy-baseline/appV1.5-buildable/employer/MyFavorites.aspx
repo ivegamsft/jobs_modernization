@@ -1,4 +1,4 @@
-<%@ Page Language="C#" MasterPageFile="~/MasterPage.master" CodeFile="MyFavorites.aspx.cs" Inherits="MyFavorites_aspx" Title="Untitled Page" %>
+<%@ Page Language="C#" MasterPageFile="~/MasterPage.master" CodeFile="MyFavorites.aspx.cs" Inherits="employer_MyFavorites_aspx" Title="Untitled Page" %>
 <%@ Register Src="../UserControls/DisplayModeController.ascx" TagName="DisplayModeController" TagPrefix="uc4" %>
 <%@ Register Src="../UserControls/MyJobs.ascx" TagName="MyJobs" TagPrefix="uc3" %>
 <%@ Register Src="../UserControls/MySearches.ascx" TagName="MySearches" TagPrefix="uc2" %>

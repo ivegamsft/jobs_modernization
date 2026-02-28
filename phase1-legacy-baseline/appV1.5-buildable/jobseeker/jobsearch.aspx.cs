@@ -9,7 +9,7 @@ using System.Web.UI.WebControls.WebParts;
 using System.Web.UI.HtmlControls;
 using JobSiteStarterKit.BOL;
 
-public partial class jobsearch_aspx : Page
+public partial class jobsearch_aspx : BasePage
 {
     protected void GridView1_RowDataBound(object sender, GridViewRowEventArgs e)
     {

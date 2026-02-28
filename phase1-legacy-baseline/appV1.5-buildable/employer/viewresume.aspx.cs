@@ -8,9 +8,8 @@ using System.Web.UI.WebControls;
 using System.Web.UI.WebControls.WebParts;
 using System.Web.UI.HtmlControls;
 using JobSiteStarterKit.BOL;
-using ASP;
 
-public partial class viewresume_aspx : Page
+public partial class viewresume_aspx : BasePage
 {
     protected void Page_Load(object sender, EventArgs e)
     {
@@ -21,7 +20,7 @@ public partial class viewresume_aspx : Page
 
         Resume r = Resume.GetResume(int.Parse(Request.QueryString["id"]));
 
-        ProfileCommon p = Profile.GetProfile(r.UserName);
+        ProfileCommon p = ProfileCommon.GetProfile(r.UserName);
         lblName.Text = "Full Name : " + p.FirstName + " " + p.LastName;
         lblEducation.Text = "Education Level : " + EducationLevel.GetEducationLevelName(r.EducationLevelID);
         lblExperience.Text = "Experience Level : " + ExperienceLevel.GetExperienceLevelName(r.ExperienceLevelID);

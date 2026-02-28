@@ -8,7 +8,7 @@ using System.Web.UI.WebControls;
 using System.Web.UI.WebControls.WebParts;
 using System.Web.UI.HtmlControls;
 
-public partial class register_aspx : Page
+public partial class register_aspx : BasePage
 {
 
     protected void CreateUserWizard1_ContinueButtonClick(object sender, EventArgs e)

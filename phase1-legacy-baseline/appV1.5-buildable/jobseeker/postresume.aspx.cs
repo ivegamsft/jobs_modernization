@@ -9,7 +9,7 @@ using System.Web.UI.WebControls.WebParts;
 using System.Web.UI.HtmlControls;
 using JobSiteStarterKit.BOL;
 
-public partial class postresume_aspx : Page
+public partial class postresume_aspx : BasePage
 {
     private Resume r;
 

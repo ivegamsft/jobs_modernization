@@ -10,7 +10,7 @@ using System.Web.UI.HtmlControls;
 using JobSiteStarterKit.BOL;
 
 
-public partial class companyprofile_aspx : Page
+public partial class companyprofile_aspx : BasePage
 {
     protected void Page_Load(object sender, EventArgs e)
     {
