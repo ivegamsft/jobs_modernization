@@ -9,6 +9,44 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-02-28: Build Verification Tests Complete — Mouse Delivers Automation
+
+**Mouse's Session Outcome**
+
+Mouse (Tester) has delivered 5 automated build verification tests (all passing). Tests are pure PowerShell, zero dependencies, CI/CD-ready.
+
+**What Mouse Completed:**
+- Created `phase1-legacy-baseline/tests/Build-Verification.ps1` with 5 tests
+- All tests passing on first run (BLD-001 through BLD-005)
+- Documentation at `phase1-legacy-baseline/tests/README.md`
+- CI/CD integration ready: exit code 0/1, no external frameworks
+
+**Test Results:**
+- BLD-001: Project file exists ✅
+- BLD-002: NuGet restore ✅
+- BLD-003: Debug build (0 errors) ✅
+- BLD-004: Release build (0 errors) ✅
+- BLD-005: Build output DLL ✅
+
+**Key Design Decisions:**
+- No test framework — pure PowerShell (zero external deps)
+- MSBuild auto-discovery via vswhere + known paths
+- Resilient NuGet (fallback to pre-existing packages/ directory)
+- Auto-detects .sln when created (works with or without)
+- CI/CD command: `powershell -ExecutionPolicy Bypass -File phase1-legacy-baseline/tests/Build-Verification.ps1`
+
+**For Tank's Runtime Work:**
+- Tests will auto-detect .sln Tank created — no script changes needed
+- Build verification now automated; can run pre-commit in CI/CD
+
+**For Dozer (DevOps):**
+- Tests are CI/CD-ready now; can integrate directly into GitHub Actions workflows
+- Exit code 0/1 can drive pipeline decisions
+
+**Related:** `.squad/decisions.md` — "2026-02-28: Build Verification Tests Automated", `.squad/orchestration-log/2026-02-28T18-30-mouse.md`
+
+---
+
 ### 2026-02-27: Phase 1 Test Plan Created — Comprehensive Testing Strategy
 
 **Context:** First tester deliverable for Phase 1. Established comprehensive testing baseline for legacy Web Forms app.

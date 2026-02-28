@@ -9,6 +9,40 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-02-28: Phase 1 Runtime Complete — Tank Finalizes Buildability & Runtime
+
+**Cross-Agent Context: Tank's Session Outcome**
+
+Tank (Backend Dev) has completed Phase 1 runtime preparation. Environment validated, LocalDB set up, code refactored for WAP migration, IIS Express running.
+
+**What Tank Completed:**
+- Environment: MSBuild v17.14, LocalDB, IIS Express, sqlpackage all present
+- Solution file created at `phase1-legacy-baseline/appV1.5-buildable/JobsSiteWeb.sln`
+- Connection strings fixed: hardcoded paths → `(localdb)\JobsLocalDb`
+- Code refactored: App_Code → Code, ProfileCommon → JobSiteProfileBase (prevents WAP runtime conflicts)
+- Database deployed: 22 tables, 157 sprocs to LocalDB instance
+- Runtime verified: HTTP 200 on 5 pages via IIS Express
+
+**Critical Gap Tank Identified:**
+- All seed data files (Countries.sql, States.sql, EducationLevels.sql, JobTypes.sql) are 0 bytes
+- Registration/login flows will fail without this data
+- Priority: HIGH for Phase 1 functional testing to proceed
+
+**For Mouse (Tester):**
+- Database and app infrastructure now live; smoke tests in TEST_PLAN.md Section 5 can execute
+- Database tests can verify 22 tables + 157 sprocs are deployed
+- Seed data gap blocks user flow testing (register, login, search)
+
+**For Dozer (DevOps):**
+- Build command finalized: `msbuild phase1-legacy-baseline\appV1.5-buildable\JobsSiteWeb.csproj /t:Build /p:Configuration=Debug`
+- NuGet restore: `nuget restore JobsSiteWeb.csproj -PackagesDirectory ..\packages`
+- Connection string changes: App now connects to LocalDB `(localdb)\JobsLocalDb`, not workshop hardcoded path
+- CI/CD can integrate build + test automation (Mouse's Build-Verification.ps1 ready)
+
+**Related:** `.squad/decisions.md` — "2026-02-28: Phase 1 Runtime Success", `.squad/orchestration-log/2026-02-28T18-30-tank.md`
+
+---
+
 ### 2026-02-28: Deployment Blockers Fixed — Dozer Completes Infrastructure Validation
 
 **Cross-Agent Context Update**

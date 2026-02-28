@@ -5,6 +5,113 @@
 
 ---
 
+## 2026-02-28: Phase 1 Runtime Success — appV1.5 Runs Locally
+
+**Decision ID:** phase1-runtime-success-2026-02-28  
+**Author:** Tank (Backend Dev)  
+**Date:** 2026-02-28  
+**Status:** Implemented & Verified  
+**Impact:** High (unblocks Phase 1 testing, Phase 2 migration planning)
+
+### Context
+
+Following the successful build fix, this session completed the full runtime preparation: environment validation, solution file creation, connection string fix, database deployment to LocalDB, and IIS Express launch with HTTP smoke testing.
+
+### What Was Done
+
+**Files Created:**
+- `phase1-legacy-baseline/appV1.5-buildable/JobsSiteWeb.sln` — VS solution file
+
+**Files Modified:**
+- `Web.config` — Connection strings updated to `(localdb)\JobsLocalDb`, Profile inherits updated
+- `Code/ProfileCommon.cs` (renamed from App_Code) — Class renamed to `JobSiteProfileBase`
+- `Code/BasePage.cs` — Updated ProfileCommon references
+- `employer/viewresume.aspx.cs` — Updated ProfileCommon references
+- `.csproj` — All App_Code paths changed to Code
+- **App_Code folder renamed to Code** — Critical WAP migration step
+
+**Database Deployed:**
+- LocalDB instance: `(localdb)\JobsLocalDb`
+- 22 tables, 9 views, 157 stored procedures
+- Seed data files are empty (0 bytes) — needs data
+
+**Runtime Verified:**
+- HTTP 200 on homepage, login, register, and other pages
+- Master page renders, job content present
+
+### Key Technical Decisions
+
+1. **App_Code → Code rename** — ASP.NET runtime double-compiles App_Code folder, causing duplicate class errors. Rename to Code prevents this.
+
+2. **ProfileCommon → JobSiteProfileBase** — ASP.NET reserves ProfileCommon as auto-generated proxy class. Our class must have different name to avoid CS0146 circular base.
+
+3. **SQL deployment via scripts, not DACPAC** — SqlBuildTask fails silently; workaround is raw SQL scripts (deployed successfully).
+
+### Remaining Work
+
+1. **Seed data gap** (HIGH PRIORITY) — All seed files are 0 bytes. Registration/login won't work without Countries/States/EducationLevels/JobTypes data
+2. **DACPAC build** — May need SSDT targets investigation
+3. **CodeFile vs CodeBehind** — Pages still use Web Site format, could standardize in Phase 2
+
+### Team Impact
+
+- **Mouse:** Smoke tests can now run (app responds HTTP 200, DB is available)
+- **Morpheus:** Phase 1 partially met (compiles + runs), seed data blocks functional testing
+- **Dozer:** Build command finalized, CI/CD can integrate
+
+### Related
+
+- Orchestration log: `.squad/orchestration-log/2026-02-28T18-30-tank.md`
+- Commit: dc71837
+
+---
+
+## 2026-02-28: Build Verification Tests Automated
+
+**Decision ID:** build-verification-tests-2026-02-28  
+**Author:** Mouse (Tester)  
+**Date:** 2026-02-28  
+**Status:** Implemented & Verified  
+**Impact:** Medium (enables CI/CD build gate)
+
+### Context
+
+TEST_PLAN.md defined 5 build verification tests. These are now automated as a self-contained PowerShell script.
+
+### What Was Created
+
+- `phase1-legacy-baseline/tests/Build-Verification.ps1` — 5 tests, pure PowerShell
+- `phase1-legacy-baseline/tests/README.md` — Usage documentation
+
+### Test Results (All Passing)
+
+- BLD-001: Project file exists ✅
+- BLD-002: NuGet restore ✅
+- BLD-003: Debug build ✅
+- BLD-004: Release build ✅
+- BLD-005: Build output (DLL) ✅
+
+### Design
+
+- No external test frameworks — zero dependencies beyond MSBuild
+- MSBuild discovery via vswhere → known paths → PATH (resilient)
+- NuGet fallback — checks pre-existing packages/ if nuget.exe unavailable
+- Auto-detects .sln when created, works without it
+- Exit code 0/1 for CI/CD integration
+
+### Team Impact
+
+- **Dozer:** Script is CI/CD-ready — can integrate into GitHub Actions immediately
+- **Tank:** Tests auto-detect .sln when created — no changes needed
+- **Morpheus:** Phase 1 success criteria (build verification) is now automated
+
+### Related
+
+- Orchestration log: `.squad/orchestration-log/2026-02-28T18-30-mouse.md`
+- Commit: aa873dd
+
+---
+
 ## 2026-02-28: Deployment Blocker Fixes — 6 Issues Resolved
 
 **Decision ID:** deployment-blocker-fixes-2026-02-28  

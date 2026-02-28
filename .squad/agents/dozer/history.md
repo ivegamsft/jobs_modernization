@@ -9,6 +9,40 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-02-28: appV1.5 Now Runs on IIS Express — Tank Enables Phase 1 Functional Testing
+
+**Cross-Agent Context: Tank's Runtime Success**
+
+Tank (Backend Dev) has successfully deployed appV1.5 to LocalDB and IIS Express. App responds HTTP 200 on 5 pages. This unblocks Phase 1 functional testing (pending seed data).
+
+**What Tank Accomplished:**
+- LocalDB instance created: `(localdb)\JobsLocalDb`
+- Database deployed: 22 tables, 9 views, 157 stored procedures
+- Connection strings fixed: `(localdb)\JobsLocalDb;Initial Catalog=JobsDB`
+- Code refactored for WAP migration: App_Code → Code, ProfileCommon → JobSiteProfileBase
+- IIS Express running, HTTP 200 on homepage + login/register/welcome/default pages
+- Master page renders, job search links visible
+
+**Critical Gap for Your Attention:**
+- All seed data SQL files are 0 bytes (empty): Countries.sql, States.sql, EducationLevels.sql, JobTypes.sql
+- Registration/login flows will fail without this data
+- This blocks Phase 1 functional testing (Sec. 5 of TEST_PLAN.md)
+- Priority: HIGH for Phase 1 → Phase 2 transition
+
+**Infrastructure Implications for Your CI/CD Work:**
+- Build command now targets: `msbuild phase1-legacy-baseline\appV1.5-buildable\JobsSiteWeb.csproj`
+- Code folder structure changed: `App_Code/` → `Code/` (update build paths in pipelines)
+- Database deployment now via raw SQL (DACPAC build fails silently, workaround uses scripts)
+- Connection string pattern: `(localdb)\JobsLocalDb;Initial Catalog=JobsDB`
+
+**For Your Deployment Scripts:**
+- Build produces `bin\JobsSiteWeb.dll` (52.5 KB)
+- LocalDB instance must exist before database deployment
+- Raw SQL scripts deploy successfully where DACPAC fails
+- sqlcmd must be classic ODBC version (`C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\sqlcmd.exe`), not Go-based v1.9
+
+**Related:** `.squad/decisions.md` — "2026-02-28: Phase 1 Runtime Success", `.squad/orchestration-log/2026-02-28T18-30-tank.md`
+
 ### 2026-02-28: appV1.5 Build Status — Tank Completes Buildability Validation
 
 **Cross-Agent Context Update**
