@@ -142,3 +142,59 @@ $msbuild = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Cur
 4. Runtime testing needs IIS Express + database setup
 
 **Status:** ✅ appV1.5 builds successfully — Phase 1 blocker removed
+
+### 2026-02-28: Phase 1 Runtime Achieved — appV1.5 Runs on IIS Express + LocalDB
+
+**Context:** Followed up on successful build by doing full runtime preparation — environment check, .sln creation, connection string fix, database deployment, and IIS Express launch.
+
+**Environment Inventory (this machine):**
+- MSBuild: `C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe` (v17.14)
+- dotnet SDK: 9.0.311, 10.0.103
+- LocalDB: ✅ Available (SQL Server 17.0.925.4)
+- IIS Express: ✅ Available (both x64 and x86)
+- sqlpackage: ✅ `C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\SqlPackage.exe`
+- Classic sqlcmd: `C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\sqlcmd.exe`
+- Go-based sqlcmd v1.9 (in PATH) — does NOT work with LocalDB pipes; must use classic sqlcmd
+- NuGet: ❌ Not in PATH (download manually from nuget.org/downloads)
+
+**What Was Created/Fixed:**
+
+1. **JobsSiteWeb.sln** — Created at `phase1-legacy-baseline/appV1.5-buildable/JobsSiteWeb.sln`
+2. **Connection strings** — Changed from hardcoded `(localdb)\MSSQLLocalDB;Initial Catalog=C:\GIT\APPMIGRATIONWORKSHOP\...` to `(localdb)\JobsLocalDb;Initial Catalog=JobsDB`
+3. **App_Code → Code rename** — WAP requires this; `App_Code` folder gets double-compiled (build-time DLL + ASP.NET runtime dynamic compilation). Standard WAP migration step.
+4. **ProfileCommon → JobSiteProfileBase rename** — ASP.NET auto-generates `class ProfileCommon` from `<profile inherits="...">`. If our class is also named `ProfileCommon`, it creates a circular base class dependency. Renamed to `JobSiteProfileBase` so ASP.NET generates `class ProfileCommon : JobSiteProfileBase`.
+5. **Web.config profile properties restored** — The `<properties>` section stays in Web.config alongside `inherits="JobSiteProfileBase"` because ASP.NET needs it to define the profile schema for the SqlProfileProvider.
+
+**Database Deployment:**
+- LocalDB instance: `(localdb)\JobsLocalDb` (SQL Server 17.0.925.4)
+- Database: `JobsDB` created
+- 22 tables deployed (3 required retry due to FK ordering: aspnet_Membership, aspnet_PersonalizationPerUser, aspnet_Profile depend on aspnet_Users)
+- 9 views deployed (0 errors)
+- 157 stored procedures deployed (0 errors)
+- 9 security roles deployed (17 scripts failed — expected for LocalDB limited security model)
+- Seed data: ❌ All 5 seed SQL files are EMPTY (0 bytes) — placeholder files with no data
+- DACPAC build: ❌ SqlBuildTask fails silently (SSDT MSBuild issue) — deployed via raw SQL scripts instead
+
+**Runtime Test Results:**
+- Homepage (`/`): HTTP 200 ✅ — 14,504 chars, job content + search + login/register links
+- Login (`/login.aspx`): HTTP 200 ✅ — 18,056 chars
+- Register (`/register.aspx`): HTTP 200 ✅ — 17,667 chars
+- Default (`/default.aspx`): HTTP 200 ✅ — 14,516 chars
+- Welcome (`/Welcome.htm`): HTTP 200 ✅ — 11,839 chars
+
+**IIS Express Launch Command:**
+```powershell
+& "C:\Program Files\IIS Express\iisexpress.exe" /path:"F:\Git\jobs_modernization\phase1-legacy-baseline\appV1.5-buildable" /port:8088 /clr:v4.0 /systray:false
+```
+
+**Remaining Issues:**
+1. **Empty seed data** — Countries, States, EducationLevels, JobTypes tables are empty. Dropdowns will show no options. Need actual INSERT statements.
+2. **CodeFile vs CodeBehind** — ASPX directives still use `CodeFile=` (Web Site pattern). Pages render but this is technically incorrect for WAP.
+3. **No functional testing** — HTTP 200 doesn't mean forms work. Registration/login require database + ASP.NET Membership infrastructure.
+4. **DACPAC build broken** — `SqlBuildTask` fails silently. May need SSDT version alignment or manual fix.
+
+**Key Insight:** The Web Site → WAP migration has TWO runtime-critical steps beyond just getting it to compile:
+- Rename `App_Code` to anything else (prevents double compilation)
+- Avoid naming custom profile class `ProfileCommon` (ASP.NET reserves that name for auto-generation)
+
+**Status:** ✅ appV1.5 runs locally — HTTP 200 on all tested pages

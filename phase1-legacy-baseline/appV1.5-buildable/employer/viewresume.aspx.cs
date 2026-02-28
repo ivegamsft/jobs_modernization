@@ -20,7 +20,7 @@ public partial class viewresume_aspx : BasePage
 
         Resume r = Resume.GetResume(int.Parse(Request.QueryString["id"]));
 
-        ProfileCommon p = ProfileCommon.GetProfile(r.UserName);
+        JobSiteProfileBase p = JobSiteProfileBase.GetProfile(r.UserName);
         lblName.Text = "Full Name : " + p.FirstName + " " + p.LastName;
         lblEducation.Text = "Education Level : " + EducationLevel.GetEducationLevelName(r.EducationLevelID);
         lblExperience.Text = "Experience Level : " + ExperienceLevel.GetExperienceLevelName(r.ExperienceLevelID);

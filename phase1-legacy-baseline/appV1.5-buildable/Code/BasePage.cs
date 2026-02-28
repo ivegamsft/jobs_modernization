@@ -7,8 +7,8 @@ using System.Web;
 /// </summary>
 public class BasePage : System.Web.UI.Page
 {
-    public ProfileCommon Profile
+    public JobSiteProfileBase Profile
     {
-        get { return (ProfileCommon)HttpContext.Current.Profile; }
+        get { return (JobSiteProfileBase)HttpContext.Current.Profile; }
     }
 }

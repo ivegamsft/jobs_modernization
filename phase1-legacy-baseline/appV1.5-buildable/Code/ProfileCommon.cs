@@ -2,15 +2,15 @@ using System.Web.Profile;
 
 /// <summary>
 /// Typed profile class for Web Application Project.
-/// In Web Site projects, ASP.NET auto-generates this from Web.config profile definition.
-/// In Web Application Projects, we must define it manually.
-/// Matches the profile properties defined in Web.config.
+/// Named JobSiteProfileBase (not ProfileCommon) to avoid collision with
+/// ASP.NET auto-generated ProfileCommon class. Web.config inherits="JobSiteProfileBase"
+/// causes ASP.NET to generate: class ProfileCommon : JobSiteProfileBase
 /// </summary>
-public class ProfileCommon : ProfileBase
+public class JobSiteProfileBase : ProfileBase
 {
-    public static ProfileCommon GetProfile(string username)
+    public static JobSiteProfileBase GetProfile(string username)
     {
-        return (ProfileCommon)ProfileBase.Create(username);
+        return (JobSiteProfileBase)ProfileBase.Create(username);
     }
 
     public new string UserName

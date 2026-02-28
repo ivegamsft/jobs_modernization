@@ -1,4 +1,4 @@
-﻿<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -118,20 +118,20 @@
       <DependentUpon>ExperienceLevelManager.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="App_Code\BOL\Company.cs" />
-    <Compile Include="App_Code\BOL\Country.cs" />
-    <Compile Include="App_Code\BOL\EducationLevel.cs" />
-    <Compile Include="App_Code\BOL\ExperienceLevel.cs" />
-    <Compile Include="App_Code\BOL\JobPosting.cs" />
-    <Compile Include="App_Code\BOL\JobType.cs" />
-    <Compile Include="App_Code\BOL\MyJob.cs" />
-    <Compile Include="App_Code\BOL\MyResume.cs" />
-    <Compile Include="App_Code\BOL\MySearch.cs" />
-    <Compile Include="App_Code\BOL\Resume.cs" />
-    <Compile Include="App_Code\BOL\State.cs" />
-    <Compile Include="App_Code\DAL\DBAccess.cs" />
-    <Compile Include="App_Code\ProfileCommon.cs" />
-    <Compile Include="App_Code\BasePage.cs" />
+    <Compile Include="Code\BOL\Company.cs" />
+    <Compile Include="Code\BOL\Country.cs" />
+    <Compile Include="Code\BOL\EducationLevel.cs" />
+    <Compile Include="Code\BOL\ExperienceLevel.cs" />
+    <Compile Include="Code\BOL\JobPosting.cs" />
+    <Compile Include="Code\BOL\JobType.cs" />
+    <Compile Include="Code\BOL\MyJob.cs" />
+    <Compile Include="Code\BOL\MyResume.cs" />
+    <Compile Include="Code\BOL\MySearch.cs" />
+    <Compile Include="Code\BOL\Resume.cs" />
+    <Compile Include="Code\BOL\State.cs" />
+    <Compile Include="Code\DAL\DBAccess.cs" />
+    <Compile Include="Code\ProfileCommon.cs" />
+    <Compile Include="Code\BasePage.cs" />
     <Compile Include="changepassword.aspx.cs">
       <DependentUpon>changepassword.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
