@@ -9,7 +9,37 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
-### 2026-02-27: Deep Infrastructure Audit — Critical Findings
+### 2026-02-28: appV1.5 Build Status — Tank Completes Buildability Validation
+
+**Cross-Agent Context Update**
+
+Tank (Backend Dev) has successfully resolved the Phase 1 critical blocker: **appV1.5 now builds**.
+
+**Build Status:**
+- ✅ Debug build: 0 errors, 9 warnings (pre-existing legacy)
+- ✅ Release build: 0 errors
+- Output: `bin\JobsSiteWeb.dll` (53KB)
+
+**What Was Fixed (4 categories, 232 compile errors resolved):**
+1. App_Code files marked as Compile (not Content) in .csproj
+2. 28 missing .designer.cs files generated for ASPX/ASCX/Master pages
+3. ProfileCommon.cs + BasePage.cs created for typed Profile access
+4. Class name collision fixed (employer/jobseeker MyFavorites)
+
+**For Dozer's CI/CD Integration:**
+- Build command ready: `msbuild phase1-legacy-baseline\appV1.5-buildable\JobsSiteWeb.csproj /t:Build /p:Configuration=Debug`
+- Requires .NET Framework 4.8 targeting pack (present on CI/CD agents)
+- NuGet restore needed once: `nuget restore JobsSiteWeb.csproj -PackagesDirectory ..\packages`
+
+**Remaining (Not Build-Blocking):**
+- No .sln file (build works on .csproj)
+- CodeFile vs CodeBehind (runtime concern)
+- Connection strings need updating (hardcoded paths)
+- Runtime testing pending (IIS Express + database)
+
+**Related:** `.squad/decisions.md` — "2026-02-28: appV1.5 Build Now Works"
+
+
 
 **Context:** Comprehensive audit of all IaC (Bicep + Terraform), CI/CD pipelines, deployment scripts, and documentation.
 

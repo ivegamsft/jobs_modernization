@@ -9,7 +9,27 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
-### 2026-02-27: Phase 1 Deployment & Test Plans — Team Context for Build Validation
+### 2026-02-28: Deployment Blockers Fixed — Dozer Completes Infrastructure Validation
+
+**Cross-Agent Context Update**
+
+Dozer (DevOps) has completed all 6 deployment blockers. Tank should be aware of these infrastructure changes for CI/CD integration:
+
+**Infrastructure Changes:**
+- All 10 CI/CD pipelines updated from `iac/` → `infrastructure/` paths
+- Bicep templates now compile without errors (agents/main.bicep duplicate removed)
+- VNet references parameterized (iaas/agents layers receive `coreVnetName` parameter)
+- Key Vault defaults to deny-by-default (security improvement)
+- Container Apps subnet delegation added (required for deployment)
+
+**For Tank's Runtime Testing:**
+- CI/CD pipelines are now pipeline-ready with correct paths
+- Build command output goes to `bin\JobsSiteWeb.dll` — ready for deployment scripts
+- Deployment infrastructure is unblocked; can proceed with IIS Express testing
+
+**Related:** `.squad/decisions.md` — "2026-02-28: Deployment Blocker Fixes"
+
+
 
 **Context:** Morpheus (Lead) and Mouse (Tester) completed Phase 1 planning in parallel. These artifacts define the execution path for appV1.5 buildability validation.
 

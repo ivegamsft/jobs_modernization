@@ -5,6 +5,132 @@
 
 ---
 
+## 2026-02-28: Deployment Blocker Fixes — 6 Issues Resolved
+
+**Decision ID:** deployment-blocker-fixes-2026-02-28  
+**Author:** Dozer (DevOps)  
+**Date:** 2026-02-28  
+**Status:** Executed  
+**Impact:** High (unblocks all Bicep deployments and CI/CD pipelines)
+
+### Context
+
+Infrastructure audit identified 6 deployment blockers preventing Bicep compilation and pipeline execution. All blockers are now resolved.
+
+### Fixes Applied
+
+**Bicep Templates (3 files):**
+
+1. **agents/main.bicep** — Removed duplicate `githubRunnersSubnet` resource declaration (compilation error). Added `coreVnetName` parameter replacing hardcoded VNet name.
+
+2. **iaas/main.bicep** — Added `coreVnetName` parameter replacing hardcoded VNet name `jobsite-dev-vnet-ubzfsgu4p5eli` (deployment-specific value that would cause failures).
+
+3. **core/core-resources.bicep** — Two security improvements:
+   - Key Vault `networkAcls.defaultAction` changed from `Allow` to `Deny` (defense-in-depth, matches Terraform security posture)
+   - Container Apps subnet `snet-ca` now has `Microsoft.App/environments` delegation (required for Container Apps Environment deployment)
+
+**CI/CD Pipelines (10 files):**
+- All deployment pipelines updated from `iac/` to `infrastructure/` path references
+- 5 GitHub Actions workflows: deploy-agents, deploy-core, deploy-iaas, deploy-paas, deploy-vpn
+- 5 Azure Pipelines definitions: deploy-agents, deploy-core, deploy-iaas, deploy-paas, deploy-vpn
+
+### Key Design Decisions
+
+1. **VNet Parameterization:** Layers that reference core VNet (iaas, agents) now receive `coreVnetName` as parameter from core module deployment output. Not hardcoded.
+
+2. **Key Vault Security:** All Key Vault instances default to deny-by-default. Access only via private endpoints or Azure services bypass. Deployment scripts accessing KV over public internet will need adjustment.
+
+3. **Pipeline Paths:** All triggers and workflow paths now correctly reference `infrastructure/bicep/` structure.
+
+4. **Sensitive Parameters:** .bicepparam files are gitignored (passwords never committed). Must pass sensitive values via CLI `--parameters` flag or Key Vault reference at deployment time.
+
+### Team Impact
+
+- Bicep templates are now compilable
+- Pipeline triggers fire correctly on infrastructure changes
+- Teams deploying iaas/agents layers must pass `coreVnetName` parameter
+- Key Vault is now production-secure (deny-by-default)
+
+### Related
+
+- Orchestration log: `.squad/orchestration-log/2026-02-28T06-45-dozer.md`
+
+---
+
+## 2026-02-28: appV1.5 Build Now Works — Web Site → WAP Migration Completed
+
+**Decision ID:** appv15-build-fixed-2026-02-28  
+**Author:** Tank (Backend Dev)  
+**Date:** 2026-02-28  
+**Status:** Implemented & Verified  
+**Impact:** High (unblocks Phase 1 testing, deployment, and all downstream work)
+
+### Context
+
+appV1.5-buildable was supposed to be the "minimal changes to make buildable" version of the legacy .NET Web Forms app. However, the Web Site → Web Application Project (WAP) migration was incomplete. The project had a .csproj file but was missing 4 critical categories of files, causing 232+ compile errors.
+
+### Root Causes & Fixes
+
+| Category | Problem | Solution | Files Changed |
+|----------|---------|----------|----------------|
+| **App_Code** | 12 BOL/DAL files marked as `<Content>` instead of `<Compile>` | Changed .csproj build action to `<Compile>` | 1 (.csproj) |
+| **Designers** | 28 ASPX/ASCX/Master pages missing .designer.cs files | Generated .designer.cs files with server control field declarations | 28 new files |
+| **Profile** | No typed `ProfileCommon` class for Web.config `<profile>` definition | Created ProfileCommon.cs + BasePage.cs; updated 6 pages to inherit BasePage | 2 new + 6 modified |
+| **Collision** | Both employer and jobseeker had `MyFavorites_aspx` class (conflicts in single assembly) | Renamed employer's class to `employer_MyFavorites_aspx` | 2 files |
+| **Namespace** | Invalid `using ASP;` (runtime-only namespace) in viewresume.aspx.cs | Removed the using statement | 1 file |
+
+### Build Result
+
+```
+Configuration: Debug
+Result: ✅ 0 errors, 9 warnings (pre-existing legacy code)
+
+Configuration: Release
+Result: ✅ 0 errors
+
+Output: bin\JobsSiteWeb.dll (53KB)
+```
+
+### Build Command (for CI/CD)
+
+```powershell
+$msbuild = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
+# One-time: nuget restore JobsSiteWeb.csproj -PackagesDirectory ..\packages
+& $msbuild phase1-legacy-baseline\appV1.5-buildable\JobsSiteWeb.csproj /t:Build /p:Configuration=Debug
+```
+
+### Remaining Work (Out of Scope)
+
+1. **No .sln file** — Build works on .csproj directly; .sln would improve VS IDE integration
+2. **CodeFile vs CodeBehind** — ASPX directives use `CodeFile=` (Web Site pattern), not `CodeBehind=` (WAP pattern); affects runtime execution, not build
+3. **Connection strings** — Hardcoded to `C:\GIT\APPMIGRATIONWORKSHOP\...` path; need updating for local development
+4. **Runtime testing** — Build success ≠ runtime success. Need IIS Express + database configuration to verify runtime behavior
+
+### Key Files Created
+
+- `App_Code/ProfileCommon.cs` — Typed profile class matching Web.config `<profile>` definition (JobSeeker + Employer properties)
+- `App_Code/BasePage.cs` — Base page class providing strongly-typed `Profile` property for inherited pages
+- 28 `.designer.cs` files — Server control field declarations for all ASPX pages, ASCX user controls, and master pages
+
+### Key Files Modified
+
+- `JobsSiteWeb.csproj` — App_Code items: Content → Compile, added references to all designer files
+- `Web.config` — Added `inherits="ProfileCommon"` to `<profile>` element
+- 6 code-behind files — Changed `: Page` to `: BasePage` where typed Profile is accessed
+- `employer/MyFavorites.aspx[.cs]` — Class collision fixed with namespace rename
+
+### Team Impact
+
+- **Mouse (Tester):** Build Verification tests (5 tests in `phase1-legacy-baseline/TEST_PLAN.md`) can now be executed
+- **Morpheus (Lead):** "Building appV1.5" section of `phase1-legacy-baseline/DEPLOYMENT_PLAN.md` is now fully executable
+- **Dozer (DevOps):** Build command is CI/CD pipeline-ready; can integrate into GitHub Actions / Azure Pipelines
+
+### Related
+
+- Orchestration log: `.squad/orchestration-log/2026-02-28T06-45-tank.md`
+
+---
+
 ## 2026-02-27: Phase 1 Deployment Plan Established
 
 **Decision ID:** phase1-deployment-plan-2026-02-27  
