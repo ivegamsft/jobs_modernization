@@ -5,6 +5,85 @@
 
 ---
 
+## 2026-02-28: Functional Smoke Tests Automated
+
+**Decision ID:** functional-smoke-tests-2026-02-28  
+**Author:** Mouse (QA Engineer)  
+**Date:** 2026-02-28  
+**Status:** Implemented & Verified  
+**Impact:** Medium (enables Phase 1 functional gate)
+
+### Context
+
+TEST_PLAN.md categories 2-4 (Database, Smoke, Integration) now have automated coverage. 24 tests verify seed data, stored procedures, membership tables, and HTTP endpoints.
+
+### What Was Created
+
+- `phase1-legacy-baseline/tests/Functional-Smoke.ps1` — 24 tests, pure PowerShell, self-contained
+
+### Test Results (All Passing)
+
+- 6 seed data count tests (88 total rows across 5 lookup tables)
+- 6 stored procedure execution tests (SelectAll + parameterized calls)
+- 2 ASP.NET Membership table tests (existence + accessibility)
+- 10 HTTP smoke tests via IIS Express (homepage, login, register, auth, error page)
+
+### Key Technical Findings
+
+1. **Classic sqlcmd required** — Go-based sqlcmd v1.9 does NOT work with LocalDB named pipes. Must use ODBC-based sqlcmd at `Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE`.
+2. **Stored proc parameter prefix** — Legacy procs use `@i` prefix (e.g., `@iCountryID`), not `@CountryID`.
+3. **Registration page structure** — CreateUserWizard multi-step; dropdowns for country/education/jobtype are on profile pages (auth-required), not on registration form.
+
+### Team Impact
+
+- **Dozer:** CI/CD command: `powershell -ExecutionPolicy Bypass -File phase1-legacy-baseline/tests/Functional-Smoke.ps1`
+- **Tank:** Seed data deployment confirmed working; all 88 rows verified
+- **Morpheus:** Phase 1 functional baseline now has automated gate (24 tests)
+
+### Related
+
+- Commit: 1226c0d
+
+---
+
+## 2026-02-28: Seed Data Populated — Phase 1 Blocker Resolved
+
+**Decision ID:** seed-data-populated-2026-02-28  
+**Author:** Tank (Backend Dev)  
+**Date:** 2026-02-28  
+**Status:** Implemented & Verified  
+**Impact:** High (unblocks Phase 1 functional testing)
+
+### Context
+
+All 4 seed data files (`01_SeedCountries.sql` through `04_SeedJobTypes.sql`) were 0 bytes — placeholder files with no data. This was identified as a HIGH priority blocker preventing registration, login, job posting, and search flows from working.
+
+### What Was Done
+
+Populated all 4 empty seed files + `RunAll_SeedData.sql` following the exact pattern from the existing `05_SeedExperienceLevels.sql`:
+
+| File | Table | Rows | Key Data |
+|------|-------|------|----------|
+| 01_SeedCountries.sql | JobsDb_Countries | 15 | US (ID=1) + 14 major job market countries |
+| 02_SeedStates.sql | JobsDb_States | 51 | All 50 US states + DC (CountryID=1) |
+| 03_SeedEducationLevels.sql | JobsDb_EducationLevels | 7 | High School → Professional + Other |
+| 04_SeedJobTypes.sql | JobsDb_JobTypes | 7 | Full-time, Part-time, Contract, Temporary, Internship, Freelance, Remote |
+| RunAll_SeedData.sql | (runner) | — | sqlcmd `:r` syntax, runs all 5 scripts in order |
+
+Deployed to LocalDB and verified via IIS Express (HTTP 200, no errors).
+
+### Team Impact
+
+- **Mouse:** Registration and job posting flows can now be functionally tested — dropdown data exists
+- **Morpheus:** Phase 1 seed data gap is closed; Phase 1 completion criteria moves forward
+- **Dozer:** `RunAll_SeedData.sql` can be integrated into CI/CD database setup
+
+### Related
+
+- Commit: 44510b1
+
+---
+
 ## 2026-02-28: Phase 1 Runtime Success — appV1.5 Runs Locally
 
 **Decision ID:** phase1-runtime-success-2026-02-28  
