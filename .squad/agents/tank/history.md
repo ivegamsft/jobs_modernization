@@ -26,6 +26,34 @@ Tank (Backend Dev) completed Phase 1 runtime prep. Environment validated (MSBuil
 
 ---
 
+### 2026-02-28: Seed Data Populated — All 4 Empty Files + RunAll Script
+
+**What Was Done:**
+- Wrote seed data SQL for all 4 empty files following the pattern from `05_SeedExperienceLevels.sql`
+- Countries: 15 rows (US=ID 1, plus Canada, UK, Australia, Germany, France, India, Japan, Brazil, Mexico, Netherlands, Singapore, Ireland, Israel, South Korea)
+- States: 51 rows (all 50 US states + DC, all mapped to CountryID=1)
+- EducationLevels: 7 rows (High School, Associate's, Bachelor's, Master's, Doctorate, Professional, Other)
+- JobTypes: 7 rows (Full-time, Part-time, Contract, Temporary, Internship, Freelance, Remote)
+- RunAll_SeedData.sql: Uses `:r` sqlcmd syntax to run all 5 scripts in order
+
+**Deployment Verified:**
+- Deployed to `(localdb)\JobsLocalDb` via classic sqlcmd (NOT go-based — go-based doesn't work with LocalDB named pipes)
+- Row counts confirmed: 15 countries, 51 states, 7 education levels, 7 job types, 8 experience levels
+- IIS Express: HTTP 200 on homepage, login, register (no errors)
+- Auth-protected pages (jobsearch, postjob, AddEditPosting) properly redirect to login (302→200)
+
+**Table naming convention:** All tables use `JobsDb_` prefix (e.g., `JobsDb_Countries`, `JobsDb_States`)
+
+**Critical gap resolved:** Seed data was the last blocker for functional user flow testing.
+
+**For other agents:**
+- Mouse: All dropdown data now populated — registration/job posting flows should work with real data
+- Morpheus: Phase 1 seed data gap closed
+
+**Commit:** 44510b1
+
+---
+
 ### 2026-02-28: Deployment Blockers Fixed — Dozer Completes Infrastructure Validation
 
 Dozer completed all 6 deployment blockers. 10 CI/CD pipelines updated from `iac/` → `infrastructure/`, Bicep templates compile without errors, VNet parameterized, Key Vault deny-by-default, Container Apps subnet delegation added. Infrastructure unblocked for Tank's testing.
