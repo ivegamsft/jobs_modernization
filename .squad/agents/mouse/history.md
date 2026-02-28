@@ -6,8 +6,46 @@
 - **Created:** 2026-02-27
 
 ## Learnings
-
+
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
+
+### 2026-02-28: Functional Smoke Tests Complete -- 24/24 Passing
+
+**Mouse's Session Outcome**
+
+Mouse (QA) delivered 24 automated functional smoke tests covering TEST_PLAN.md categories 2-4 (Database, Smoke, Integration baseline). All passing on first green run.
+
+**What Mouse Completed:**
+- Created `phase1-legacy-baseline/tests/Functional-Smoke.ps1` with 24 tests
+- 14 database tests + 10 HTTP smoke tests, all passing
+- IIS Express auto-start/stop lifecycle management
+- Classic ODBC sqlcmd (not Go-based) for LocalDB compatibility
+
+**Test Results (all green):**
+- DB-SEED-001..006: Seed data counts verified (Countries=15, States=51, EducationLevels=7, JobTypes=7, ExperienceLevels=8, Total=88)
+- DB-PROC-001..006: Stored procedures execute without error (SelectAll procs + parameterized calls)
+- DB-MBR-001..002: ASP.NET Membership tables (11 tables exist, key tables accessible)
+- SMK-001..010: HTTP smoke (homepage 200, login 200, register 200+wizard, job search auth redirect, admin auth redirect, error page, DB-connected content)
+
+**Key Technical Decisions:**
+- Uses classic ODBC sqlcmd (`C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\SQLCMD.EXE`) -- Go-based sqlcmd v1.9 does NOT work with LocalDB named pipes
+- Stored proc parameter prefix is `@i` (e.g., `@iCountryID` not `@CountryID`) -- legacy naming convention
+- Registration page uses ASP.NET CreateUserWizard (multi-step) -- dropdown for role selection appears on step 2, not initial render
+- Country/Education/JobType dropdowns are on authenticated profile pages, NOT on the registration form
+- All lookup tables use `JobsDb_` prefix (e.g., `JobsDb_Countries`, `JobsDb_States`)
+- IIS Express launched via `/path:` and `/port:` args with auto-port selection (8100-8199 range)
+
+**Gotchas Found:**
+- ASP.NET page output contains "error" in CSS class names/validation controls -- must use specific patterns like 'Server Error in' not just 'error'
+- IIS Express stdout/stderr must be redirected to files to prevent output interleaving with test results
+- `$PSScriptRoot` can be empty when script content is eval'd -- always pass `-ProjectDir` explicitly in CI/CD
+
+**For Team:**
+- Dozer: Script is CI/CD-ready, same pattern as Build-Verification.ps1
+- Tank: Confirmed seed data is correctly deployed and queryable
+- Morpheus: Phase 1 functional baseline now automated (24 tests gate)
+
+**Commit:** 1226c0d
 
 ### 2026-02-28: Build Verification Tests Complete — Mouse Delivers Automation
 
