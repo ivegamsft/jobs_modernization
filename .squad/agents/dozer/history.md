@@ -205,3 +205,37 @@ Repository now clearly communicates the three-phase modernization journey. Folde
 **Key Pattern:** All scripts now use `$PSScriptRoot\..` to resolve paths to the infrastructure root. No hardcoded absolute paths remain.
 
 **Status:** ✅ Complete, committed
+
+### 2026-02-27: Deployment Blocker Fixes — 6 Issues Resolved, 13 Files Changed
+
+**Context:** Executed prioritized fix list from infrastructure audit. 6 deployment blockers across Bicep templates and CI/CD pipelines.
+
+**Fixes Applied:**
+
+1. **Compilation blocker — duplicate resource** (agents/main.bicep): Removed duplicate `githubRunnersSubnet` resource declaration. Bicep compiler will no longer error.
+
+2. **Hardcoded VNet name** (iaas/main.bicep + agents/main.bicep): Both files had `name: 'jobsite-dev-vnet-ubzfsgu4p5eli'` — a deployment-specific VNet name with uniqueString suffix baked in. Replaced with `param coreVnetName string` so the VNet name is passed at deployment time from core module outputs.
+
+3. **Key Vault network defaults** (core/core-resources.bicep): Changed `networkAcls.defaultAction` from `'Allow'` to `'Deny'`. Now matches Terraform's security posture.
+
+4. **Container Apps subnet delegation** (core/core-resources.bicep): Added `Microsoft.App/environments` delegation to `snet-ca` subnet. Required for Container Apps Environment deployment.
+
+5. **Passwords in .bicepparam files**: All .bicepparam files are gitignored — passwords never committed to repo. Locally, removed empty string password params and replaced with comments directing users to pass via CLI `--parameters` flag or Key Vault reference.
+
+6. **CI/CD pipeline paths** (10 files): Updated all `iac/` references to `infrastructure/` across 5 GitHub Actions workflows and 5 Azure Pipelines definitions.
+
+**Key Patterns:**
+- Bicep layer modules (iaas, agents) reference core VNet by name — MUST be passed as a parameter
+- .bicepparam files are gitignored; sensitive params passed via CLI or Key Vault reference
+- Pipeline path triggers must match actual repo directory structure
+- Key Vault default network action should be `Deny` (defense-in-depth)
+- Container Apps subnets require `Microsoft.App/environments` delegation
+
+**Files Changed (13 tracked):**
+- `infrastructure/bicep/agents/main.bicep` — duplicate removed + VNet param
+- `infrastructure/bicep/iaas/main.bicep` — VNet param added
+- `infrastructure/bicep/core/core-resources.bicep` — Key Vault deny + CA subnet delegation
+- `.github/workflows/deploy-{agents,core,iaas,paas,vpn}.yml` — path fixes
+- `.azure-pipelines/deploy-{agents,core,iaas,paas,vpn}.yml` — path fixes
+
+**Status:** ✅ Complete, committed

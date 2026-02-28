@@ -76,3 +76,49 @@
 - See `.squad/decisions.md` for complete decision log
 
 **Status:** ✅ Repository ready for Phase 1 work
+
+### 2026-02-28: appV1.5 Build Fixed — Web Site → WAP Migration Completed
+
+**Context:** The critical Phase 1 blocker — nobody had verified appV1.5 actually builds. Investigated and found the Web Site → Web Application Project migration was incomplete (232 compile errors).
+
+**Root Causes Found & Fixed:**
+1. **App_Code files as Content, not Compile** — 12 BOL/DAL files in .csproj were `<Content>` instead of `<Compile>`. The `JobSiteStarterKit` namespace classes weren't being compiled into the assembly.
+2. **Missing .designer.cs files** — 28 pages/controls had no designer files. WAP needs these to declare server control fields. Generated them by parsing ASPX markup.
+3. **Missing ProfileCommon class** — Web Site projects auto-generate typed profile class from Web.config. Created `ProfileCommon.cs` + `BasePage.cs` to provide typed Profile access.
+4. **Duplicate class name** — employer and jobseeker both had `MyFavorites_aspx`. Renamed employer's to `employer_MyFavorites_aspx`.
+5. **Invalid `using ASP;`** — Runtime-only namespace reference in viewresume.aspx.cs.
+
+**Build Command:**
+```powershell
+$msbuild = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
+# One-time: nuget restore JobsSiteWeb.csproj -PackagesDirectory ..\packages
+& $msbuild phase1-legacy-baseline\appV1.5-buildable\JobsSiteWeb.csproj /t:Build /p:Configuration=Debug
+```
+
+**Build Tools Available on This Machine:**
+- MSBuild: `C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe`
+- dotnet SDK: 10.0.103
+- nuget.exe: NOT pre-installed (had to download from nuget.org)
+- .NET Framework 4.8 targeting pack: ✅ Present
+- WebApplication.targets: ✅ Present at VS 2022 v17.0 path
+
+**Key Files Created:**
+- `App_Code/ProfileCommon.cs` — Typed profile matching Web.config `<profile>` definition
+- `App_Code/BasePage.cs` — Base page class with typed `Profile` property
+- 28 `.designer.cs` files — Server control field declarations for all pages/controls
+
+**Key Files Modified:**
+- `JobsSiteWeb.csproj` — App_Code Content→Compile, added designer file references
+- `Web.config` — Added `inherits="ProfileCommon"` to profile element
+- 6 code-behind files — Changed `: Page` to `: BasePage` for typed Profile access
+- `employer/MyFavorites.aspx[.cs]` — Class renamed to fix collision
+
+**Result:** 0 errors, 9 warnings (pre-existing legacy). Both Debug and Release succeed. Output: `bin\JobsSiteWeb.dll` (53KB).
+
+**Remaining Issues (not build-related):**
+1. No .sln file exists — build works on .csproj directly
+2. ASPX directives use `CodeFile=` (Web Site) not `CodeBehind=` (WAP) — runtime concern
+3. Connection strings hardcoded to `C:\GIT\APPMIGRATIONWORKSHOP\...` — need updating
+4. Runtime testing needs IIS Express + database setup
+
+**Status:** ✅ appV1.5 builds successfully — Phase 1 blocker removed
