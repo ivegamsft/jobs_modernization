@@ -27,10 +27,6 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Setup SQL Server Data Tools
-        run: |
-          choco install sqlserver-dac-framework -y
-
       - name: Build DACPAC
         run: |
           if (Test-Path "database/JobsDB") {

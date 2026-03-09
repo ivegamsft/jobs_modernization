@@ -24,11 +24,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Azure CLI
-        uses: azure/cli@v2
-
-      - name: Install Bicep CLI
-        run: az bicep install
+      - name: Setup Bicep CLI
+        uses: Azure/setup-bicep@v2
 
       - name: Build all Bicep files
         shell: bash
@@ -44,7 +41,7 @@ jobs:
           for file in "${files[@]}"; do
             out="bicep-build/$(basename "${file%.bicep}").json"
             echo "Building $file -> $out"
-            az bicep build --file "$file" --outfile "$out"
+            bicep build "$file" --outfile "$out"
           done
 
       - name: Upload Bicep build artifacts
