@@ -34,17 +34,14 @@ jobs:
         run: |
           nuget restore phase1-legacy-baseline/appV1.5-buildable/JobsSiteWeb.csproj -SolutionDirectory phase1-legacy-baseline
 
-      - name: Build and publish web project
+      - name: Build web project
         shell: pwsh
         run: |
-          $publishDir = Join-Path $PWD "publish"
           msbuild phase1-legacy-baseline/appV1.5-buildable/JobsSiteWeb.csproj `
             /p:Configuration=Debug `
-            /p:Platform=AnyCPU `
-            /p:DeployOnBuild=true `
-            /p:WebPublishMethod=FileSystem `
-            /p:DeleteExistingFiles=true `
-            /p:publishUrl="$publishDir"
+            /p:Platform=AnyCPU
+
+          $publishDir = Join-Path $PWD "phase1-legacy-baseline/appV1.5-buildable/bin"
 
           if (!(Test-Path $publishDir)) {
             throw "Publish output folder not found: $publishDir"
@@ -59,11 +56,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jobsiteweb-build
-          path: ./publish/
+          path: phase1-legacy-baseline/appV1.5-buildable/bin/
           retention-days: 30
 
       - name: Set build output
         run: |
-          echo "BUILD_ARTIFACT_PATH=./publish" >> $env:GITHUB_OUTPUT
+          echo "BUILD_ARTIFACT_PATH=phase1-legacy-baseline/appV1.5-buildable/bin" >> $env:GITHUB_OUTPUT
           echo "BUILD_VERSION=$(Get-Date -Format 'yyyyMMddHHmmss')" >> $env:GITHUB_OUTPUT
         id: build

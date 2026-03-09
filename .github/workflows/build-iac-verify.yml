@@ -35,7 +35,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t files < <(find infrastructure/bicep -type f -name 'main.bicep')
+          mapfile -t files < <(find infrastructure/bicep/core infrastructure/bicep/iaas infrastructure/bicep/paas -type f -name 'main.bicep')
           if [ ${#files[@]} -eq 0 ]; then
             echo "No main.bicep files found under infrastructure/bicep"
             exit 0

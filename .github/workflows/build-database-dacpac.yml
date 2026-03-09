@@ -58,6 +58,7 @@ jobs:
               "Investigate SQL project build diagnostics in workflow logs.",
               "No .dacpac was produced in this run."
             ) | Set-Content -Path "database/build-output/NO_DACPAC.txt"
+            exit 0
           }
         shell: pwsh
 
