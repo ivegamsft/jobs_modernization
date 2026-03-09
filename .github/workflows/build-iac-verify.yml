@@ -35,15 +35,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t files < <(find infrastructure/bicep -type f -name '*.bicep')
+          mapfile -t files < <(find infrastructure/bicep -type f -name 'main.bicep')
           if [ ${#files[@]} -eq 0 ]; then
-            echo "No .bicep files found under infrastructure/bicep"
+            echo "No main.bicep files found under infrastructure/bicep"
             exit 0
           fi
 
           mkdir -p bicep-build
           for file in "${files[@]}"; do
-            out="bicep-build/$(basename "${file%.bicep}").json"
+            name=$(echo "${file#infrastructure/bicep/}" | tr '/' '-' | sed 's/\.bicep$//')
+            out="bicep-build/${name}.json"
             echo "Building $file -> $out"
             az bicep build --file "$file" --outfile "$out"
           done

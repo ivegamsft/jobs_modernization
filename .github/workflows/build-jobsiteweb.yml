@@ -32,7 +32,7 @@ jobs:
 
       - name: Restore NuGet packages
         run: |
-          nuget restore phase1-legacy-baseline/appV1.5-buildable/JobsSiteWeb.csproj -SolutionDirectory phase1-legacy-baseline/appV1.5-buildable
+          nuget restore phase1-legacy-baseline/appV1.5-buildable/JobsSiteWeb.csproj -SolutionDirectory phase1-legacy-baseline
 
       - name: Build and publish web project
         shell: pwsh
