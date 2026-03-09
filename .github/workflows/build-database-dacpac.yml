@@ -4,12 +4,12 @@ on:
   push:
     branches: [main, develop]
     paths:
-      - 'Database/**'
+      - 'database/**'
       - '.github/workflows/build-database-dacpac.yml'
   pull_request:
     branches: [main, develop]
     paths:
-      - 'Database/**'
+      - 'database/**'
   workflow_dispatch:
 
 jobs:
@@ -24,26 +24,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
       - name: Setup SQL Server Data Tools
         run: |
           choco install sqlserver-dac-framework -y
 
       - name: Build DACPAC
         run: |
-          if (Test-Path "Database/JobsDB") {
-            $sqlprojFile = Get-ChildItem -Path "Database/JobsDB" -Filter "*.sqlproj" | Select-Object -First 1
+          if (Test-Path "database/JobsDB") {
+            $sqlprojFile = Get-ChildItem -Path "database/JobsDB" -Filter "*.sqlproj" | Select-Object -First 1
             if ($sqlprojFile) {
               msbuild $sqlprojFile.FullName /p:Configuration=Debug /p:Platform="Any CPU"
+            } else {
+              throw "No .sqlproj file found under database/JobsDB"
             }
+          } else {
+            throw "Path database/JobsDB not found"
           }
         shell: pwsh
 
       - name: Find DACPAC file
         run: |
-          $dacFile = Get-ChildItem -Path "Database" -Filter "*.dacpac" -Recurse | Select-Object -First 1
+          $dacFile = Get-ChildItem -Path "database" -Filter "*.dacpac" -Recurse | Select-Object -First 1
           if ($dacFile) {
             echo "DACPAC_PATH=$($dacFile.FullName)" >> $env:GITHUB_OUTPUT
             echo "DACPAC_NAME=$($dacFile.Name)" >> $env:GITHUB_OUTPUT
+          } else {
+            throw "No .dacpac produced by build"
           }
         id: find-dacpac
         shell: pwsh
@@ -52,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: database-dacpac
-          path: Database/**/*.dacpac
+          path: database/**/*.dacpac
           retention-days: 30
 
       - name: Set output
@@ -60,9 +69,3 @@ jobs:
           echo "DACPAC_NAME=${{ steps.find-dacpac.outputs.DACPAC_NAME }}" >> $env:GITHUB_OUTPUT
           echo "DACPAC_PATH=${{ steps.find-dacpac.outputs.DACPAC_PATH }}" >> $env:GITHUB_OUTPUT
         id: dacpac
-
-outputs:
-  dacpac-name:
-    value: ${{ steps.dacpac.outputs.DACPAC_NAME }}
-  dacpac-path:
-    value: ${{ steps.dacpac.outputs.DACPAC_PATH }}

@@ -1,0 +1,80 @@
+name: Build IaC Verify
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'infrastructure/bicep/**'
+      - 'infrastructure/terraform/**'
+      - '.github/workflows/build-iac-verify.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'infrastructure/bicep/**'
+      - 'infrastructure/terraform/**'
+  workflow_dispatch:
+
+jobs:
+  verify-bicep:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Azure CLI
+        uses: azure/cli@v2
+
+      - name: Install Bicep CLI
+        run: az bicep install
+
+      - name: Build all Bicep files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(find infrastructure/bicep -type f -name '*.bicep')
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No .bicep files found under infrastructure/bicep"
+            exit 0
+          fi
+
+          mkdir -p bicep-build
+          for file in "${files[@]}"; do
+            out="bicep-build/$(basename "${file%.bicep}").json"
+            echo "Building $file -> $out"
+            az bicep build --file "$file" --outfile "$out"
+          done
+
+      - name: Upload Bicep build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bicep-compiled-json
+          path: bicep-build/
+          retention-days: 14
+
+  verify-terraform:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    defaults:
+      run:
+        working-directory: infrastructure/terraform
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform fmt check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init (no backend)
+        run: terraform init -backend=false
+
+      - name: Terraform validate
+        run: terraform validate

@@ -4,12 +4,12 @@ on:
   push:
     branches: [main, develop]
     paths:
-      - 'appV1.5-JobsSiteWeb/**'
+      - 'phase1-legacy-baseline/appV1.5-buildable/**'
       - '.github/workflows/build-jobsiteweb.yml'
   pull_request:
     branches: [main, develop]
     paths:
-      - 'appV1.5-JobsSiteWeb/**'
+      - 'phase1-legacy-baseline/appV1.5-buildable/**'
   workflow_dispatch:
 
 jobs:
@@ -27,25 +27,33 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
       - name: Restore NuGet packages
         run: |
-          nuget restore appV1.5-JobsSiteWeb/JobsSiteWeb.csproj
+          nuget restore phase1-legacy-baseline/appV1.5-buildable/JobsSiteWeb.csproj
 
-      - name: Build Solution
+      - name: Build and publish web project
+        shell: pwsh
         run: |
-          msbuild appV1.5-JobsSiteWeb/JobsSiteWeb.csproj `
+          $publishDir = Join-Path $PWD "publish"
+          msbuild phase1-legacy-baseline/appV1.5-buildable/JobsSiteWeb.csproj `
             /p:Configuration=Debug `
             /p:Platform="Any CPU" `
             /p:DeployOnBuild=true `
             /p:WebPublishMethod=FileSystem `
-            /p:PublishProfile=FileSystemPublish
+            /p:DeleteExistingFiles=true `
+            /p:publishUrl="$publishDir"
 
-      - name: Publish artifacts
-        run: |
-          dotnet publish appV1.5-JobsSiteWeb/JobsSiteWeb.csproj `
-            -c Debug `
-            -o ./publish `
-            --no-build
+          if (!(Test-Path $publishDir)) {
+            throw "Publish output folder not found: $publishDir"
+          }
+
+          $publishedFiles = Get-ChildItem -Path $publishDir -Recurse -File
+          if ($publishedFiles.Count -eq 0) {
+            throw "Publish output is empty"
+          }
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -59,9 +67,3 @@ jobs:
           echo "BUILD_ARTIFACT_PATH=./publish" >> $env:GITHUB_OUTPUT
           echo "BUILD_VERSION=$(Get-Date -Format 'yyyyMMddHHmmss')" >> $env:GITHUB_OUTPUT
         id: build
-
-outputs:
-  build-artifact-path:
-    value: ${{ steps.build.outputs.BUILD_ARTIFACT_PATH }}
-  build-version:
-    value: ${{ steps.build.outputs.BUILD_VERSION }}
