@@ -32,7 +32,15 @@ jobs:
           if (Test-Path "database/JobsDB") {
             $sqlprojFile = Get-ChildItem -Path "database/JobsDB" -Filter "*.sqlproj" | Select-Object -First 1
             if ($sqlprojFile) {
-              msbuild $sqlprojFile.FullName /p:Configuration=Debug /p:Platform="Any CPU"
+              $classicExit = 0
+              msbuild $sqlprojFile.FullName /p:Configuration=Debug /p:Platform=AnyCPU
+              if ($LASTEXITCODE -ne 0) {
+                Write-Warning "Classic SSDT build failed (exit $LASTEXITCODE). Trying NetCoreBuild fallback."
+                dotnet build $sqlprojFile.FullName /p:Configuration=Debug /p:Platform=AnyCPU /p:NetCoreBuild=true
+                if ($LASTEXITCODE -ne 0) {
+                  throw "Both classic and NetCoreBuild SQL project builds failed"
+                }
+              }
             } else {
               throw "No .sqlproj file found under database/JobsDB"
             }
