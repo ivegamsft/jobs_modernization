@@ -1,3 +1,5 @@
+# Cross-phase: Database schema is shared across all migration phases
+# This workflow builds the DACPAC from database/ for all phases
 name: Build Database DACPAC
 
 on:

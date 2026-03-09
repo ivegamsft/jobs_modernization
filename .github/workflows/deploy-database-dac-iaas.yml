@@ -1,3 +1,5 @@
+# Cross-phase: Database deployment to IaaS SQL Server
+# Uses database-dacpac artifact from build-database-dacpac workflow
 name: Deploy Database to IaaS
 
 on:

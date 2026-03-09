@@ -1,3 +1,5 @@
+# Cross-phase: VPN gateway for secure access to Azure resources
+# Used across all phases for development and operations
 name: Deploy VPN Gateway
 
 on:

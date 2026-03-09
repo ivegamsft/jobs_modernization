@@ -1,3 +1,5 @@
+# Cross-phase: GitHub Copilot agent infrastructure
+# Deploys containerized agents for all phases
 name: Deploy Agents Infrastructure
 
 on:

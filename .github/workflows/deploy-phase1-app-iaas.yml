@@ -1,4 +1,6 @@
-name: Deploy App to IaaS
+# Phase 1 specific: Deploys legacy .NET 4.8 app to IaaS VMs
+# Phase 2+ will require separate deploy workflows for modernized apps
+name: Deploy Phase 1 App to IaaS
 
 on:
   workflow_dispatch:
@@ -8,7 +10,7 @@ on:
         required: true
         default: 'dev'
   workflow_run:
-    workflows: ["Build JobsSiteWeb"]
+    workflows: ["Build Phase 1 Legacy Web"]
     types:
       - completed
     branches: [main]

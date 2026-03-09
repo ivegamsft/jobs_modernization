@@ -1,3 +1,5 @@
+# Cross-phase: Infrastructure code (Bicep/Terraform) is shared across all phases
+# This workflow validates all IaC templates in infrastructure/
 name: Build IaC Verify
 
 on:

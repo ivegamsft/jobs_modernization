@@ -1,3 +1,4 @@
+# Cross-phase: IaaS infrastructure (VMs, SQL Server) used by Phase 1 and testing
 name: Deploy IaaS Infrastructure
 
 on:

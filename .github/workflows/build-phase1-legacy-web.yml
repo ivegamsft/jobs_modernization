@@ -1,11 +1,13 @@
-name: Build JobsSiteWeb
+# Phase 1 specific: Builds legacy .NET 4.8 web application
+# Phase 2+ will require separate build workflows for modernized apps
+name: Build Phase 1 Legacy Web
 
 on:
   push:
     branches: [main, develop]
     paths:
       - 'phase1-legacy-baseline/appV1.5-buildable/**'
-      - '.github/workflows/build-jobsiteweb.yml'
+      - '.github/workflows/build-phase1-legacy-web.yml'
   pull_request:
     branches: [main, develop]
     paths:

@@ -1,3 +1,4 @@
+# Cross-phase: PaaS infrastructure (App Service, Azure SQL) used by Phase 1+ modernization
 name: Deploy PaaS Infrastructure
 
 on:

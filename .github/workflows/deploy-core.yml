@@ -1,3 +1,4 @@
+# Cross-phase: Core infrastructure (networking, ACR, Key Vault) used by all phases
 name: Deploy Core Infrastructure
 
 on:
