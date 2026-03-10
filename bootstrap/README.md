@@ -2,6 +2,39 @@
 
 This directory contains scripts for initializing Azure infrastructure prerequisites before deploying the Jobs Modernization project.
 
+## ⚡ Quick Reference Card
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Bootstrap in 4 Steps                                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│ 1️⃣  RUN BOOTSTRAP SCRIPT                                        │
+│     $ cd bootstrap                                              │
+│     $ .\bootstrap-azure.ps1                                    │
+│     → Creates Service Principal + Terraform backend             │
+│                                                                 │
+│ 2️⃣  COPY SECRETS (from script output)                           │
+│     AZURE_CLIENT_ID = ...                                      │
+│     AZURE_TENANT_ID = ...                                      │
+│     AZURE_SUBSCRIPTION_ID = ...                                │
+│                                                                 │
+│ 3️⃣  ADD TO GITHUB SECRETS                                       │
+│     Settings → Secrets and variables → Actions                 │
+│     Add 3 repository secrets (above)                           │
+│                                                                 │
+│ 4️⃣  VERIFY & DEPLOY                                             │
+│     Test: Actions → Deploy Core Infrastructure → Run workflow   │
+│     Look for: ✅ "Successfully authenticated with Azure"       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+⏱️  Total Time: ~5 minutes
+📋 Manual Steps: 3 (run, copy, paste to GitHub)
+🔐 Secrets Used: 3 (SERVICE PRINCIPAL)
+✅ Workflows Ready: 5 (auto-configured)
+```
+
 ## Purpose
 
 Before you can deploy infrastructure using Bicep, Terraform, or GitHub Actions workflows, you need:
@@ -78,12 +111,12 @@ If you've forked this repository:
 **Parameters:**
 ```powershell
 -SubscriptionId       # Azure Subscription ID (optional, uses current if not provided)
--Location             # Azure region (default: swedencentral)
+-Location             # Azure region (default: YOUR REGION)
 -ResourceGroupScope   # Array of RG names for scoped permissions (optional)
 -SkipServicePrincipal # Skip SP creation if already exists
 -SkipTerraformBackend # Skip Terraform backend if not needed
--GitHubOrg            # GitHub organization (default: chikamsoachumsft)
--GitHubRepo           # GitHub repository (default: jobs_modernization)
+-GitHubOrg            # GitHub organization (default: YOUR ORG)
+-GitHubRepo           # GitHub repository (default: YOUR REPO)
 ```
 
 **Usage:**
@@ -151,9 +184,9 @@ If you've forked this repository:
 
 **Parameters:**
 ```powershell
--ResourceGroupName  # RG name (default: jobsite-tfstate-rg)
--StorageAccountName # Storage account name (default: jobsitetfstate)
--Location           # Azure region (default: swedencentral)
+-ResourceGroupName  # RG name (default: YOUR RG)
+-StorageAccountName # Storage account name (default: YOUR STORAGE ACCOUNT)
+-Location           # Azure region (default: YOUR REGION)
 -ContainerName      # Container name (default: tfstate)
 -SubscriptionId     # Target subscription (optional)
 ```
@@ -180,31 +213,93 @@ If you've forked this repository:
 
 ## Post-Bootstrap Steps
 
-### 1. Configure GitHub Secrets
+### ⚠️ REQUIRED: Configure GitHub Secrets
 
-Navigate to: `https://github.com/{org}/{repo}/settings/secrets/actions`
+**These steps are REQUIRED before workflows can deploy to Azure.**
 
-Add these secrets (values printed by bootstrap script):
+#### Step 1: Copy Bootstrap Output
 
-| Secret Name | Description | Example |
-|-------------|-------------|---------|
-| `AZURE_CLIENT_ID` | Service Principal Application ID | `12345678-1234-...` |
-| `AZURE_TENANT_ID` | Azure AD Tenant ID | `87654321-4321-...` |
-| `AZURE_SUBSCRIPTION_ID` | Target Azure Subscription ID | `abcdef12-3456-...` |
+After running the bootstrap script, you'll see output like:
 
-### 2. Verify OIDC Configuration
+```
+✅ Service Principal Created
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Your workflows should use this pattern:
+Add these secrets to GitHub:
 
-```yaml
-- uses: azure/login@v2
-  with:
-    client-id: ${{ secrets.AZURE_CLIENT_ID }}
-    tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-    subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+AZURE_CLIENT_ID=12345678-1234-1234-1234-123456789abc
+AZURE_TENANT_ID=87654321-4321-4321-4321-cba987654321
+AZURE_SUBSCRIPTION_ID=aaaabbbb-cccc-dddd-eeee-ffffffff0000
 ```
 
-✅ All workflows in `.github/workflows/` are already configured this way.
+**Copy these three values exactly as shown.**
+
+#### Step 2: Add Secrets to GitHub Actions
+
+1. Go to your repository on GitHub
+2. Click **Settings** (top right)
+3. Click **Secrets and variables** → **Actions** (left sidebar)
+4. Click **New repository secret** (green button)
+
+Add each secret one at a time:
+
+**Secret #1: AZURE_CLIENT_ID**
+- Name: `AZURE_CLIENT_ID`
+- Value: `12345678-1234-1234-1234-123456789abc` (from bootstrap output)
+- Click **Add secret**
+
+**Secret #2: AZURE_TENANT_ID**
+- Name: `AZURE_TENANT_ID`
+- Value: `87654321-4321-4321-4321-cba987654321` (from bootstrap output)
+- Click **Add secret**
+
+**Secret #3: AZURE_SUBSCRIPTION_ID**
+- Name: `AZURE_SUBSCRIPTION_ID`
+- Value: `aaaabbbb-cccc-dddd-eeee-ffffffff0000` (from bootstrap output)
+- Click **Add secret**
+
+#### Step 3: Verify Secrets Are Configured
+
+After adding all 3 secrets, you should see:
+
+```
+AZURE_CLIENT_ID
+AZURE_SUBSCRIPTION_ID
+AZURE_TENANT_ID
+```
+
+Listed in the repository secrets.
+
+**Do NOT include these secrets in code or commit to git.**
+
+### 2. Verify OIDC Configuration in Workflows
+
+Your workflows automatically use this pattern:
+
+```yaml
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      id-token: write      # Required for OIDC
+      contents: read
+
+    steps:
+      - name: Azure Login with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+```
+
+✅ **All deployment workflows already configured this way:**
+- `deploy-core.yml` - Core networking, ACR, Key Vault
+- `deploy-iaas.yml` - Virtual machines, SQL Server
+- `deploy-paas.yml` - App Services, Azure SQL Database
+- `deploy-phase1-app-paas.yml` - Legacy .NET 4.8 application (PaaS)
+- `deploy-phase1-app-iaas.yml` - Legacy .NET 4.8 application (IaaS)
 
 ### 3. Initialize Terraform (If Using)
 
@@ -218,7 +313,38 @@ terraform init -backend-config=backend-dev.hcl
 terraform plan -var-file=dev.tfvars
 ```
 
-### 4. Deploy Infrastructure
+### 4. Verify OIDC Authentication ✅
+
+Before deploying, verify your OIDC setup works:
+
+**Option A: Run a Test Deployment Workflow**
+
+1. Go to GitHub repository → **Actions** tab
+2. Click **Deploy Core Infrastructure** workflow
+3. Click **Run workflow** (green button)
+4. Select environment: `dev`
+5. Click **Run workflow**
+6. Watch the logs - should show:
+   ```
+   ✅ Welcome to github-actions-oidc
+   ✅ Successfully authenticated with Azure using OIDC
+   ```
+
+**Option B: Manual Verification with Azure CLI**
+
+```powershell
+# Login as Service Principal (locally)
+az login --service-principal `
+  -u $AZURE_CLIENT_ID `
+  --tenant $AZURE_TENANT_ID
+
+# Check subscription
+az account show --subscription $AZURE_SUBSCRIPTION_ID
+
+# Expected output: Your subscription details with owner: "github-actions-oidc"
+```
+
+### 5. Deploy Infrastructure
 
 Choose your deployment path:
 
@@ -277,6 +403,51 @@ az ad app federated-credential list --id <app-object-id>
 # Delete specific credential
 az ad app federated-credential delete --id <app-object-id> --federated-credential-id <cred-id>
 ```
+
+### ⚠️ OIDC Issues in Workflows
+
+#### Error: "Unauthorized: The service principal does not have explicit permissions"
+
+**Cause:** GitHub Secrets not configured
+
+**Solution:**
+1. Run bootstrap script again to get exact values
+2. Add all 3 secrets to GitHub:
+   - `AZURE_CLIENT_ID`
+   - `AZURE_TENANT_ID`
+   - `AZURE_SUBSCRIPTION_ID`
+3. Verify secrets are listed in Settings → Secrets → Actions
+4. Re-run workflow
+
+#### Error: "Invalid resource group" or "Resource not found" in workflow
+
+**Cause:** Workflow running but Azure login failing silently
+
+**Solution:**
+1. Check workflow logs for Azure login step
+2. Verify secrets are correct in GitHub
+3. Ensure Service Principal has permissions for the resource group
+4. Run locally to verify: `az login --service-principal -u $AZURE_CLIENT_ID --tenant $AZURE_TENANT_ID`
+
+#### Error: "Insufficient permissions" in workflow
+
+**Cause:** Service Principal doesn't have access to target resource group
+
+**Solution:**
+```powershell
+# Re-run bootstrap with resource group scope
+.\bootstrap-azure.ps1 -ResourceGroupScope @('target-rg-name')
+```
+
+#### Workflow never appears in Actions tab
+
+**Cause:** Secrets not configured yet
+
+**Solution:**
+- Workflows won't trigger automatically until secrets are added
+- Add all 3 secrets to GitHub first
+- Push a new commit to trigger workflows
+- Or manually trigger via "Run workflow" button
 
 ---
 
