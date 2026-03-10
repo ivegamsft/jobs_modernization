@@ -93,6 +93,9 @@ output resourceGroupName string = iaasResourceGroup.name
 output wfeVmId string = iaasResources.outputs.wfeVmId
 output wfeVmName string = iaasResources.outputs.wfeVmName
 output wfeVmPrivateIp string = iaasResources.outputs.wfeVmPrivateIp
+output loadBalancerPublicIp string = iaasResources.outputs.loadBalancerPublicIp
+output loadBalancerFqdn string = iaasResources.outputs.loadBalancerFqdn
+output loadBalancerName string = iaasResources.outputs.loadBalancerName
 
 output sqlVmId string = iaasResources.outputs.sqlVmId
 output sqlVmName string = iaasResources.outputs.sqlVmName

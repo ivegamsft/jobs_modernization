@@ -9,6 +9,10 @@ on:
         description: 'Environment (dev, staging, prod)'
         required: true
         default: 'dev'
+      build_run_id:
+        description: 'Optional build workflow run ID (required for manual deploy artifact download)'
+        required: false
+        default: ''
   workflow_run:
     workflows: ["Build Phase 1 Legacy Web"]
     types:
@@ -23,16 +27,27 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      actions: read
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Validate build run ID for manual trigger
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -z "${{ github.event.inputs.build_run_id }}" ]; then
+            echo "For workflow_dispatch, provide build_run_id from 'Build Phase 1 Legacy Web' run." >&2
+            exit 1
+          fi
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: jobsiteweb-build
           path: ./app-build/
+          run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || github.event.inputs.build_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Azure Login with OIDC
         uses: azure/login@v2
@@ -42,6 +57,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Get PaaS deployment outputs
+        shell: bash
         run: |
           ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
           az deployment sub show \
@@ -49,23 +65,82 @@ jobs:
             --query "properties.outputs" \
             -o json > paas-outputs.json
 
+      - name: Export dependency contract and required app settings
+        shell: bash
+        run: |
+          ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
+          APP_SERVICE_NAME="$(jq -r '.appServiceName.value' paas-outputs.json)"
+          APP_SERVICE_URL="$(jq -r '.appServiceUrl.value' paas-outputs.json)"
+          PAAS_RESOURCE_GROUP="$(jq -r '.resourceGroupName.value' paas-outputs.json)"
+          SQL_SERVER_NAME="$(jq -r '.sqlServerName.value' paas-outputs.json)"
+          SQL_DATABASE_NAME="$(jq -r '.sqlDatabaseName.value' paas-outputs.json)"
+          APPINSIGHTS_KEY="$(jq -r '.appInsightsInstrumentationKey.value' paas-outputs.json)"
+          APPINSIGHTS_CONNECTION_STRING="$(jq -r '.appInsightsConnectionString.value' paas-outputs.json)"
+
+          echo "APP_SERVICE_NAME=$APP_SERVICE_NAME" >> "$GITHUB_ENV"
+          echo "APP_SERVICE_URL=$APP_SERVICE_URL" >> "$GITHUB_ENV"
+          echo "PAAS_RESOURCE_GROUP=$PAAS_RESOURCE_GROUP" >> "$GITHUB_ENV"
+          echo "SQL_SERVER_NAME=$SQL_SERVER_NAME" >> "$GITHUB_ENV"
+          echo "SQL_DATABASE_NAME=$SQL_DATABASE_NAME" >> "$GITHUB_ENV"
+          echo "APPINSIGHTS_KEY=$APPINSIGHTS_KEY" >> "$GITHUB_ENV"
+          echo "APPINSIGHTS_CONNECTION_STRING=$APPINSIGHTS_CONNECTION_STRING" >> "$GITHUB_ENV"
+
+          jq -n \
+            --arg environment "$ENVIRONMENT" \
+            --arg appServiceName "$APP_SERVICE_NAME" \
+            --arg appServiceUrl "$APP_SERVICE_URL" \
+            --arg resourceGroupName "$PAAS_RESOURCE_GROUP" \
+            --arg sqlServerName "$SQL_SERVER_NAME" \
+            --arg sqlDatabaseName "$SQL_DATABASE_NAME" \
+            --arg appInsightsKey "$APPINSIGHTS_KEY" \
+            --arg appInsightsConnectionString "$APPINSIGHTS_CONNECTION_STRING" \
+            '{
+              environment: $environment,
+              appServiceName: $appServiceName,
+              appServiceUrl: $appServiceUrl,
+              resourceGroupName: $resourceGroupName,
+              requiredAppSettings: {
+                ASPNETCORE_ENVIRONMENT: $environment,
+                APPINSIGHTS_INSTRUMENTATIONKEY: $appInsightsKey,
+                APPLICATIONINSIGHTS_CONNECTION_STRING: $appInsightsConnectionString,
+                JOBSITE_SQL_SERVER: $sqlServerName,
+                JOBSITE_SQL_DATABASE: $sqlDatabaseName,
+                WEBSITE_RUN_FROM_PACKAGE: "1"
+              }
+            }' > phase1-app-paas-dependencies.json
+
+      - name: Configure App Service app settings
+        shell: bash
+        run: |
+          az webapp config appsettings set \
+            --resource-group "$PAAS_RESOURCE_GROUP" \
+            --name "$APP_SERVICE_NAME" \
+            --settings \
+              "ASPNETCORE_ENVIRONMENT=${{ github.event.inputs.environment || 'dev' }}" \
+              "APPINSIGHTS_INSTRUMENTATIONKEY=$APPINSIGHTS_KEY" \
+              "APPLICATIONINSIGHTS_CONNECTION_STRING=$APPINSIGHTS_CONNECTION_STRING" \
+              "JOBSITE_SQL_SERVER=$SQL_SERVER_NAME" \
+              "JOBSITE_SQL_DATABASE=$SQL_DATABASE_NAME" \
+              "WEBSITE_RUN_FROM_PACKAGE=1"
+
       - name: Deploy to App Service
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ env.APP_SERVICE_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ./app-build/
 
+      - name: Upload app dependency artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase1-app-paas-dependencies-${{ github.event.inputs.environment || 'dev' }}
+          path: phase1-app-paas-dependencies.json
+          retention-days: 30
+
       - name: Verify deployment
+        shell: bash
         run: |
           ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
-          outputFile=$(cat paas-outputs.json | jq -r .appServiceUrl.value)
+          outputFile="$APP_SERVICE_URL"
           
           echo "Checking deployment at $outputFile"
           curl -I "$outputFile" || echo "Health check failed"
-
-outputs:
-  deployment-status:
-    value: ${{ job.status }}
-  environment:
-    value: ${{ github.event.inputs.environment || 'dev' }}

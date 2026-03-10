@@ -54,23 +54,29 @@ jobs:
                 environment="$ENVIRONMENT"
 
       - name: Get VPN outputs
+        shell: bash
         run: |
           ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
           az deployment sub show \
             --name "jobsite-vpn-${ENVIRONMENT}" \
             --query "properties.outputs" \
             -o json > vpn-outputs.json
-        id: vpn-output
+
+          jq -n \
+            --arg environment "$ENVIRONMENT" \
+            --arg deploymentName "jobsite-vpn-${ENVIRONMENT}" \
+            --argfile outputs vpn-outputs.json \
+            '{
+              environment: $environment,
+              deploymentName: $deploymentName,
+              outputs: $outputs
+            }' > vpn-dependencies.json
 
       - name: Upload outputs
         uses: actions/upload-artifact@v4
         with:
-          name: vpn-deployment-outputs
-          path: vpn-outputs.json
+          name: vpn-deployment-outputs-${{ github.event.inputs.environment || 'dev' }}
+          path: |
+            vpn-outputs.json
+            vpn-dependencies.json
           retention-days: 30
-
-outputs:
-  deployment-status:
-    value: ${{ job.status }}
-  vpn-configured:
-    value: 'true'

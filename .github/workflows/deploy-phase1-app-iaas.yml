@@ -9,6 +9,10 @@ on:
         description: 'Environment (dev, staging, prod)'
         required: true
         default: 'dev'
+      build_run_id:
+        description: 'Optional build workflow run ID (required for manual deploy artifact download)'
+        required: false
+        default: ''
   workflow_run:
     workflows: ["Build Phase 1 Legacy Web"]
     types:
@@ -23,16 +27,26 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      actions: read
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Validate build run ID for manual trigger
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch" -and [string]::IsNullOrWhiteSpace("${{ github.event.inputs.build_run_id }}")) {
+            throw "For workflow_dispatch, provide build_run_id from 'Build Phase 1 Legacy Web' run."
+          }
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: jobsiteweb-build
           path: ./app-build/
+          run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || github.event.inputs.build_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Azure Login with OIDC
         uses: azure/login@v2
@@ -49,20 +63,53 @@ jobs:
             --query "properties.outputs" \
             -o json > iaas-outputs.json
 
-      - name: Deploy to IIS on VMs
+      - name: Export dependency contract
+        shell: pwsh
         run: |
           $outputFile = Get-Content -Path "iaas-outputs.json" | ConvertFrom-Json
-          
-          # Extract VM connection details from outputs
-          $vmIps = $outputFile.vmPublicIps.value
+          $environment = "${{ github.event.inputs.environment || 'dev' }}"
+
+          $dependency = @{
+            environment = $environment
+            resourceGroupName = $outputFile.resourceGroupName.value
+            wfeVmName = $outputFile.wfeVmName.value
+            sqlVmName = $outputFile.sqlVmName.value
+            webEndpoint = @{
+              loadBalancerPublicIp = $outputFile.loadBalancerPublicIp.value
+              loadBalancerFqdn = $outputFile.loadBalancerFqdn.value
+            }
+            requiredIaasSecrets = @(
+              "VM_ADMIN_USERNAME",
+              "VM_ADMIN_PASSWORD"
+            )
+          } | ConvertTo-Json -Depth 5
+
+          $dependency | Out-File -FilePath "phase1-app-iaas-dependencies.json" -Encoding utf8
+
+      - name: Upload app dependency artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase1-app-iaas-dependencies-${{ github.event.inputs.environment || 'dev' }}
+          path: phase1-app-iaas-dependencies.json
+          retention-days: 30
+
+      - name: Deploy to IIS on VMs
+        run: |
+          if ([string]::IsNullOrWhiteSpace("${{ secrets.VM_ADMIN_USERNAME }}") -or [string]::IsNullOrWhiteSpace("${{ secrets.VM_ADMIN_PASSWORD }}")) {
+            throw "Missing required secrets VM_ADMIN_USERNAME and/or VM_ADMIN_PASSWORD for IaaS app deployment."
+          }
+
+          $outputFile = Get-Content -Path "iaas-outputs.json" | ConvertFrom-Json
+          $vmIps = @($outputFile.loadBalancerPublicIp.value)
           $appPath = "C:\inetpub\wwwroot\JobSiteWeb"
+
+          $securePassword = ConvertTo-SecureString "${{ secrets.VM_ADMIN_PASSWORD }}" -AsPlainText -Force
+          $credential = New-Object System.Management.Automation.PSCredential ("${{ secrets.VM_ADMIN_USERNAME }}", $securePassword)
           
           foreach ($vmIp in $vmIps) {
             Write-Host "Deploying to VM: $vmIp"
             
-            # Copy application files to VM via RDP/PSRemoting
-            # Ensure PSRemoting is configured on target VMs
-            $session = New-PSSession -ComputerName $vmIp -Credential ${{ secrets.VM_CREDENTIAL }}
+            $session = New-PSSession -ComputerName $vmIp -Credential $credential
             
             Copy-Item -Path "./app-build/*" -Destination $appPath -ToSession $session -Recurse -Force
             
@@ -78,7 +125,7 @@ jobs:
       - name: Verify deployment
         run: |
           $outputFile = Get-Content -Path "iaas-outputs.json" | ConvertFrom-Json
-          $vmIps = $outputFile.vmPublicIps.value
+          $vmIps = @($outputFile.loadBalancerPublicIp.value)
           
           foreach ($vmIp in $vmIps) {
             Write-Host "Checking deployment on $vmIp..."
@@ -86,9 +133,3 @@ jobs:
             Write-Host "Response Status: $($response.StatusCode)"
           }
         shell: pwsh
-
-outputs:
-  deployment-status:
-    value: ${{ job.status }}
-  environment:
-    value: ${{ github.event.inputs.environment || 'dev' }}

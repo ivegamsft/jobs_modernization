@@ -33,6 +33,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      actions: read
 
     steps:
       - name: Checkout code
@@ -44,6 +45,17 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get Core dependency outputs
+        run: |
+          ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
+          az deployment sub show \
+            --name "jobsite-core-${ENVIRONMENT}" \
+            --query "properties.outputs" \
+            -o json > core-outputs.json
+
+          echo "CORE_RESOURCE_GROUP=$(jq -r '.resourceGroupName.value' core-outputs.json)" >> "$GITHUB_ENV"
+          echo "CORE_VNET_NAME=$(jq -r '.vnetName.value' core-outputs.json)" >> "$GITHUB_ENV"
 
       - name: Deploy IaaS Infrastructure
         uses: azure/cli@v2
@@ -60,7 +72,9 @@ jobs:
               --parameters \
                 environment="$ENVIRONMENT" \
                 vmSize="$VM_SIZE" \
-                sqlVmSize="$SQL_VM_SIZE"
+                sqlVmSize="$SQL_VM_SIZE" \
+                coreResourceGroupName="$CORE_RESOURCE_GROUP" \
+                coreVnetName="$CORE_VNET_NAME"
 
       - name: Get IaaS outputs
         run: |
@@ -69,22 +83,35 @@ jobs:
             --name "jobsite-iaas-${ENVIRONMENT}" \
             --query "properties.outputs" \
             -o json > iaas-outputs.json
+
+          jq -n \
+            --arg environment "$ENVIRONMENT" \
+            --arg resourceGroup "$(jq -r '.resourceGroupName.value' iaas-outputs.json)" \
+            --arg loadBalancerPublicIp "$(jq -r '.loadBalancerPublicIp.value' iaas-outputs.json)" \
+            --arg loadBalancerFqdn "$(jq -r '.loadBalancerFqdn.value' iaas-outputs.json)" \
+            --arg wfeVmName "$(jq -r '.wfeVmName.value' iaas-outputs.json)" \
+            --arg sqlVmName "$(jq -r '.sqlVmName.value' iaas-outputs.json)" \
+            --arg sqlVmPrivateIp "$(jq -r '.sqlVmPrivateIp.value' iaas-outputs.json)" \
+            '{
+              environment: $environment,
+              resourceGroupName: $resourceGroup,
+              webEndpoint: {
+                loadBalancerPublicIp: $loadBalancerPublicIp,
+                loadBalancerFqdn: $loadBalancerFqdn
+              },
+              vmDependencies: {
+                wfeVmName: $wfeVmName,
+                sqlVmName: $sqlVmName,
+                sqlVmPrivateIp: $sqlVmPrivateIp
+              }
+            }' > iaas-dependencies.json
         id: iaas-output
 
       - name: Upload outputs
         uses: actions/upload-artifact@v4
         with:
-          name: iaas-deployment-outputs
-          path: iaas-outputs.json
+          name: iaas-deployment-outputs-${{ github.event.inputs.environment || 'dev' }}
+          path: |
+            iaas-outputs.json
+            iaas-dependencies.json
           retention-days: 30
-
-      - name: Set deployment status
-        run: |
-          echo "IAAS_DEPLOYED=true" >> $env:GITHUB_OUTPUT
-        id: deploy-status
-
-outputs:
-  iaas-deployed:
-    value: ${{ steps.deploy-status.outputs.IAAS_DEPLOYED }}
-  deployment-status:
-    value: ${{ job.status }}

@@ -29,6 +29,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      actions: read
 
     steps:
       - name: Checkout code
@@ -40,6 +41,19 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get Core dependency outputs
+        run: |
+          ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
+          az deployment sub show \
+            --name "jobsite-core-${ENVIRONMENT}" \
+            --query "properties.outputs" \
+            -o json > core-outputs.json
+
+          echo "CORE_RESOURCE_GROUP=$(jq -r '.resourceGroupName.value' core-outputs.json)" >> "$GITHUB_ENV"
+          echo "PE_SUBNET_ID=$(jq -r '.peSubnetId.value' core-outputs.json)" >> "$GITHUB_ENV"
+          echo "CONTAINER_APPS_SUBNET_ID=$(jq -r '.containerAppsSubnetId.value' core-outputs.json)" >> "$GITHUB_ENV"
+          echo "LOG_ANALYTICS_WORKSPACE_ID=$(jq -r '.logAnalyticsWorkspaceId.value' core-outputs.json)" >> "$GITHUB_ENV"
 
       - name: Deploy PaaS Infrastructure
         uses: azure/cli@v2
@@ -54,7 +68,13 @@ jobs:
               --template-file "./infrastructure/bicep/paas/main.bicep" \
               --parameters \
                 environment="$ENVIRONMENT" \
-                appServiceSku="$APP_SERVICE_SKU"
+                appServiceSku="$APP_SERVICE_SKU" \
+                sqlAadAdminObjectId="${{ secrets.SQL_AAD_ADMIN_OBJECT_ID }}" \
+                sqlAadAdminName="${{ secrets.SQL_AAD_ADMIN_NAME }}" \
+                peSubnetId="$PE_SUBNET_ID" \
+                containerAppsSubnetId="$CONTAINER_APPS_SUBNET_ID" \
+                logAnalyticsWorkspaceId="$LOG_ANALYTICS_WORKSPACE_ID" \
+                coreResourceGroupName="$CORE_RESOURCE_GROUP"
 
       - name: Get PaaS outputs
         run: |
@@ -63,22 +83,38 @@ jobs:
             --name "jobsite-paas-${ENVIRONMENT}" \
             --query "properties.outputs" \
             -o json > paas-outputs.json
+
+          jq -n \
+            --arg environment "$ENVIRONMENT" \
+            --arg resourceGroup "$(jq -r '.resourceGroupName.value' paas-outputs.json)" \
+            --arg appServiceName "$(jq -r '.appServiceName.value' paas-outputs.json)" \
+            --arg appServiceUrl "$(jq -r '.appServiceUrl.value' paas-outputs.json)" \
+            --arg sqlServerName "$(jq -r '.sqlServerName.value' paas-outputs.json)" \
+            --arg sqlDatabaseName "$(jq -r '.sqlDatabaseName.value' paas-outputs.json)" \
+            --arg appInsightsConnectionString "$(jq -r '.appInsightsConnectionString.value' paas-outputs.json)" \
+            --arg appInsightsInstrumentationKey "$(jq -r '.appInsightsInstrumentationKey.value' paas-outputs.json)" \
+            '{
+              environment: $environment,
+              resourceGroupName: $resourceGroup,
+              appServiceName: $appServiceName,
+              appServiceUrl: $appServiceUrl,
+              sqlServerName: $sqlServerName,
+              sqlDatabaseName: $sqlDatabaseName,
+              requiredAppSettings: {
+                ASPNETCORE_ENVIRONMENT: $environment,
+                APPLICATIONINSIGHTS_CONNECTION_STRING: $appInsightsConnectionString,
+                APPINSIGHTS_INSTRUMENTATIONKEY: $appInsightsInstrumentationKey,
+                SQL_SERVER_NAME: $sqlServerName,
+                SQL_DATABASE_NAME: $sqlDatabaseName
+              }
+            }' > paas-dependencies.json
         id: paas-output
 
       - name: Upload outputs
         uses: actions/upload-artifact@v4
         with:
-          name: paas-deployment-outputs
-          path: paas-outputs.json
+          name: paas-deployment-outputs-${{ github.event.inputs.environment || 'dev' }}
+          path: |
+            paas-outputs.json
+            paas-dependencies.json
           retention-days: 30
-
-      - name: Set deployment status
-        run: |
-          echo "PAAS_DEPLOYED=true" >> $env:GITHUB_OUTPUT
-        id: deploy-status
-
-outputs:
-  paas-deployed:
-    value: ${{ steps.deploy-status.outputs.PAAS_DEPLOYED }}
-  deployment-status:
-    value: ${{ job.status }}

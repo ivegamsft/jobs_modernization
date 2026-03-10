@@ -9,6 +9,10 @@ on:
         description: 'Environment (dev, staging, prod)'
         required: true
         default: 'dev'
+      build_run_id:
+        description: 'Optional DACPAC build run ID (required for manual deploy artifact download)'
+        required: false
+        default: ''
   workflow_run:
     workflows: ["Build Database DACPAC"]
     types:
@@ -23,16 +27,26 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      actions: read
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Validate build run ID for manual trigger
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch" -and [string]::IsNullOrWhiteSpace("${{ github.event.inputs.build_run_id }}")) {
+            throw "For workflow_dispatch, provide build_run_id from 'Build Database DACPAC' run."
+          }
 
       - name: Download DACPAC artifact
         uses: actions/download-artifact@v4
         with:
           name: database-dacpac
           path: ./dacpac/
+          run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || github.event.inputs.build_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Azure Login with OIDC
         uses: azure/login@v2
@@ -49,6 +63,26 @@ jobs:
             --query "properties.outputs" `
             -o json | Out-File -FilePath "iaas-outputs.json"
 
+      - name: Export database dependency contract
+        shell: pwsh
+        run: |
+          $outputFile = Get-Content -Path "iaas-outputs.json" | ConvertFrom-Json
+          $dependency = @{
+            environment = "${{ github.event.inputs.environment || 'dev' }}"
+            sqlVmName = $outputFile.sqlVmName.value
+            sqlVmPrivateIp = $outputFile.sqlVmPrivateIp.value
+            requiredSecrets = @("SQL_ADMIN_PASSWORD")
+          } | ConvertTo-Json -Depth 5
+
+          $dependency | Out-File -FilePath "database-iaas-dependencies.json" -Encoding utf8
+
+      - name: Upload database dependency artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-iaas-dependencies-${{ github.event.inputs.environment || 'dev' }}
+          path: database-iaas-dependencies.json
+          retention-days: 30
+
       - name: Install SqlPackage
         run: |
           choco install sqlpackage -y
@@ -56,7 +90,7 @@ jobs:
       - name: Deploy DACPAC to SQL Server VM
         run: |
           $outputFile = Get-Content -Path "iaas-outputs.json" | ConvertFrom-Json
-          $sqlVmIp = $outputFile.sqlVmPublicIp.value
+          $sqlVmIp = $outputFile.sqlVmPrivateIp.value
           $dacFiles = Get-ChildItem -Path "./dacpac" -Filter "*.dacpac" -Recurse
           
           foreach ($dacFile in $dacFiles) {
@@ -77,7 +111,7 @@ jobs:
       - name: Verify database deployment
         run: |
           $outputFile = Get-Content -Path "iaas-outputs.json" | ConvertFrom-Json
-          $sqlVmIp = $outputFile.sqlVmPublicIp.value
+          $sqlVmIp = $outputFile.sqlVmPrivateIp.value
           $connectionString = "Server=$sqlVmIp;User Id=sqladmin;Password=${{ secrets.SQL_ADMIN_PASSWORD }};Encrypt=false;"
           
           $connection = New-Object System.Data.SqlClient.SqlConnection
@@ -91,9 +125,3 @@ jobs:
           Write-Host "Database connection successful: $result"
           $connection.Close()
         shell: pwsh
-
-outputs:
-  deployment-status:
-    value: ${{ job.status }}
-  environment:
-    value: ${{ github.event.inputs.environment || 'dev' }}

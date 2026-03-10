@@ -63,19 +63,31 @@ jobs:
             --name "jobsite-core-${ENVIRONMENT}" \
             --query "properties.outputs" \
             -o json > core-outputs.json
-            
-          echo "DEPLOYMENT_OUTPUTS=$(cat core-outputs.json)" >> $env:GITHUB_OUTPUT
-        id: deploy-output
+
+          jq -n \
+            --arg environment "$ENVIRONMENT" \
+            --arg resourceGroupName "$(jq -r '.resourceGroupName.value' core-outputs.json)" \
+            --arg vnetName "$(jq -r '.vnetName.value' core-outputs.json)" \
+            --arg peSubnetId "$(jq -r '.peSubnetId.value' core-outputs.json)" \
+            --arg containerAppsSubnetId "$(jq -r '.containerAppsSubnetId.value' core-outputs.json)" \
+            --arg logAnalyticsWorkspaceId "$(jq -r '.logAnalyticsWorkspaceId.value' core-outputs.json)" \
+            '{
+              environment: $environment,
+              resourceGroupName: $resourceGroupName,
+              requiredByDownstream: {
+                coreResourceGroupName: $resourceGroupName,
+                coreVnetName: $vnetName,
+                peSubnetId: $peSubnetId,
+                containerAppsSubnetId: $containerAppsSubnetId,
+                logAnalyticsWorkspaceId: $logAnalyticsWorkspaceId
+              }
+            }' > core-dependencies.json
 
       - name: Upload outputs
         uses: actions/upload-artifact@v4
         with:
-          name: core-deployment-outputs
-          path: core-outputs.json
+          name: core-deployment-outputs-${{ github.event.inputs.environment || 'dev' }}
+          path: |
+            core-outputs.json
+            core-dependencies.json
           retention-days: 30
-
-outputs:
-  deployment-status:
-    value: ${{ job.status }}
-  outputs-path:
-    value: core-outputs.json

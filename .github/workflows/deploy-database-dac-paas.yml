@@ -9,6 +9,10 @@ on:
         description: 'Environment (dev, staging, prod)'
         required: true
         default: 'dev'
+      build_run_id:
+        description: 'Optional DACPAC build run ID (required for manual deploy artifact download)'
+        required: false
+        default: ''
   workflow_run:
     workflows: ["Build Database DACPAC"]
     types:
@@ -23,16 +27,27 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      actions: read
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Validate build run ID for manual trigger
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -z "${{ github.event.inputs.build_run_id }}" ]; then
+            echo "For workflow_dispatch, provide build_run_id from 'Build Database DACPAC' run." >&2
+            exit 1
+          fi
 
       - name: Download DACPAC artifact
         uses: actions/download-artifact@v4
         with:
           name: database-dacpac
           path: ./dacpac/
+          run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || github.event.inputs.build_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Azure Login with OIDC
         uses: azure/login@v2
@@ -48,6 +63,31 @@ jobs:
             --name "jobsite-paas-${ENVIRONMENT}" \
             --query "properties.outputs" \
             -o json > paas-outputs.json
+
+      - name: Export database dependency contract
+        shell: bash
+        run: |
+          ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
+          SQL_SERVER="$(jq -r '.sqlServerName.value' paas-outputs.json)"
+          SQL_DATABASE="$(jq -r '.sqlDatabaseName.value' paas-outputs.json)"
+
+          jq -n \
+            --arg environment "$ENVIRONMENT" \
+            --arg sqlServer "$SQL_SERVER" \
+            --arg sqlDatabase "$SQL_DATABASE" \
+            '{
+              environment: $environment,
+              sqlServerName: $sqlServer,
+              sqlDatabaseName: $sqlDatabase,
+              requiredSecrets: ["SQL_ADMIN_LOGIN", "SQL_ADMIN_PASSWORD"]
+            }' > database-paas-dependencies.json
+
+      - name: Upload database dependency artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-paas-dependencies-${{ github.event.inputs.environment || 'dev' }}
+          path: database-paas-dependencies.json
+          retention-days: 30
 
       - name: Install SqlPackage
         run: |
@@ -83,9 +123,3 @@ jobs:
             -P "${{ secrets.SQL_ADMIN_PASSWORD }}" \
             -d "JobsiteDb" \
             -Q "SELECT @@version"
-
-outputs:
-  deployment-status:
-    value: ${{ job.status }}
-  environment:
-    value: ${{ github.event.inputs.environment || 'dev' }}

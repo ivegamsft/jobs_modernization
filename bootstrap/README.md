@@ -301,7 +301,56 @@ jobs:
 - `deploy-phase1-app-paas.yml` - Legacy .NET 4.8 application (PaaS)
 - `deploy-phase1-app-iaas.yml` - Legacy .NET 4.8 application (IaaS)
 
-### 3. Initialize Terraform (If Using)
+### 3. Required Secrets and App Settings Contract
+
+The stack now uses an explicit dependency contract from IaC outputs to app deployment.
+
+#### Repository Secrets Required
+
+| Secret | Used By | Purpose |
+|---|---|---|
+| `AZURE_CLIENT_ID` | All deploy workflows | OIDC auth client ID |
+| `AZURE_TENANT_ID` | All deploy workflows | OIDC tenant |
+| `AZURE_SUBSCRIPTION_ID` | All deploy workflows | OIDC subscription |
+| `SQL_AAD_ADMIN_OBJECT_ID` | `deploy-paas.yml` | Required input for Azure SQL AAD admin |
+| `SQL_AAD_ADMIN_NAME` | `deploy-paas.yml` | Required input for Azure SQL AAD admin |
+| `SQL_ADMIN_LOGIN` | `deploy-database-dac-paas.yml` | SQL auth login for DACPAC publish |
+| `SQL_ADMIN_PASSWORD` | `deploy-database-dac-paas.yml`, `deploy-database-dac-iaas.yml` | SQL auth password for DACPAC publish |
+| `VM_ADMIN_USERNAME` | `deploy-phase1-app-iaas.yml` | WinRM/PowerShell remoting user |
+| `VM_ADMIN_PASSWORD` | `deploy-phase1-app-iaas.yml` | WinRM/PowerShell remoting password |
+
+#### App Service App Settings Applied by Workflow
+
+`deploy-phase1-app-paas.yml` automatically sets these in App Service:
+
+| App Setting | Source |
+|---|---|
+| `ASPNETCORE_ENVIRONMENT` | Workflow environment input |
+| `APPINSIGHTS_INSTRUMENTATIONKEY` | PaaS IaC output |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | PaaS IaC output |
+| `JOBSITE_SQL_SERVER` | PaaS IaC output (`sqlServerName`) |
+| `JOBSITE_SQL_DATABASE` | PaaS IaC output (`sqlDatabaseName`) |
+| `WEBSITE_RUN_FROM_PACKAGE` | Static value `1` |
+
+#### Cross-Workflow Dependency Artifacts
+
+Each workflow exports an environment-specific dependency artifact for downstream workflows:
+
+| Workflow | Artifact |
+|---|---|
+| `deploy-core.yml` | `core-deployment-outputs-{environment}` |
+| `deploy-iaas.yml` | `iaas-deployment-outputs-{environment}` |
+| `deploy-paas.yml` | `paas-deployment-outputs-{environment}` |
+| `deploy-phase1-app-paas.yml` | `phase1-app-paas-dependencies-{environment}` |
+| `deploy-phase1-app-iaas.yml` | `phase1-app-iaas-dependencies-{environment}` |
+| `deploy-database-dac-paas.yml` | `database-paas-dependencies-{environment}` |
+| `deploy-database-dac-iaas.yml` | `database-iaas-dependencies-{environment}` |
+| `deploy-agents.yml` | `agents-deployment-outputs-{environment}` |
+| `deploy-vpn.yml` | `vpn-deployment-outputs-{environment}` |
+
+For manual (`workflow_dispatch`) app/database deploys, pass `build_run_id` so artifact download can resolve the triggering build run.
+
+### 4. Initialize Terraform (If Using)
 
 ```powershell
 cd ../infrastructure/terraform
@@ -313,7 +362,7 @@ terraform init -backend-config=backend-dev.hcl
 terraform plan -var-file=dev.tfvars
 ```
 
-### 4. Verify OIDC Authentication ✅
+### 5. Verify OIDC Authentication ✅
 
 Before deploying, verify your OIDC setup works:
 
@@ -344,7 +393,7 @@ az account show --subscription $AZURE_SUBSCRIPTION_ID
 # Expected output: Your subscription details with owner: "github-actions-oidc"
 ```
 
-### 5. Deploy Infrastructure
+### 6. Deploy Infrastructure
 
 Choose your deployment path:
 

@@ -58,25 +58,29 @@ jobs:
                 agentCount=$AGENT_COUNT
 
       - name: Get deployment outputs
+        shell: bash
         run: |
           ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
           az deployment sub show \
             --name "jobsite-agents-${ENVIRONMENT}" \
             --query "properties.outputs" \
             -o json > agents-outputs.json
-            
-          echo "AGENTS_DEPLOYED=true" >> $env:GITHUB_OUTPUT
-        id: deploy-output
+
+          jq -n \
+            --arg environment "$ENVIRONMENT" \
+            --arg deploymentName "jobsite-agents-${ENVIRONMENT}" \
+            --argfile outputs agents-outputs.json \
+            '{
+              environment: $environment,
+              deploymentName: $deploymentName,
+              outputs: $outputs
+            }' > agents-dependencies.json
 
       - name: Upload outputs
         uses: actions/upload-artifact@v4
         with:
-          name: agents-deployment-outputs
-          path: agents-outputs.json
+          name: agents-deployment-outputs-${{ github.event.inputs.environment || 'dev' }}
+          path: |
+            agents-outputs.json
+            agents-dependencies.json
           retention-days: 30
-
-outputs:
-  agents-deployed:
-    value: ${{ steps.deploy-output.outputs.AGENTS_DEPLOYED }}
-  deployment-status:
-    value: ${{ job.status }}

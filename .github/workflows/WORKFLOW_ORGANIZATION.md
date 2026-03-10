@@ -97,6 +97,57 @@ Infrastructure Deployment Flow:
     └─> deploy-paas.yml (for PaaS path)
     └─> deploy-agents.yml (optional)
     └─> deploy-vpn.yml (optional)
+
+Dependency Export Contract:
+  deploy-core.yml
+    └─> exports core-deployment-outputs-{environment} (core-outputs.json + core-dependencies.json)
+  deploy-iaas.yml
+    └─> exports iaas-deployment-outputs-{environment} (iaas-outputs.json + iaas-dependencies.json)
+  deploy-paas.yml
+    └─> exports paas-deployment-outputs-{environment} (paas-outputs.json + paas-dependencies.json)
+  deploy-phase1-app-paas.yml
+    └─> exports phase1-app-paas-dependencies-{environment}
+  deploy-phase1-app-iaas.yml
+    └─> exports phase1-app-iaas-dependencies-{environment}
+  deploy-database-dac-paas.yml
+    └─> exports database-paas-dependencies-{environment}
+  deploy-database-dac-iaas.yml
+    └─> exports database-iaas-dependencies-{environment}
+  deploy-agents.yml
+    └─> exports agents-deployment-outputs-{environment} (agents-outputs.json + agents-dependencies.json)
+  deploy-vpn.yml
+    └─> exports vpn-deployment-outputs-{environment} (vpn-outputs.json + vpn-dependencies.json)
+
+---
+
+## Required Secrets and App Settings
+
+### Required Repository Secrets
+
+- `AZURE_CLIENT_ID`
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
+- `SQL_AAD_ADMIN_OBJECT_ID`
+- `SQL_AAD_ADMIN_NAME`
+- `SQL_ADMIN_LOGIN`
+- `SQL_ADMIN_PASSWORD`
+- `VM_ADMIN_USERNAME`
+- `VM_ADMIN_PASSWORD`
+
+### App Service Settings Managed by Workflow
+
+`deploy-phase1-app-paas.yml` configures these app settings from IaC outputs and workflow input:
+
+- `ASPNETCORE_ENVIRONMENT`
+- `APPINSIGHTS_INSTRUMENTATIONKEY`
+- `APPLICATIONINSIGHTS_CONNECTION_STRING`
+- `JOBSITE_SQL_SERVER`
+- `JOBSITE_SQL_DATABASE`
+- `WEBSITE_RUN_FROM_PACKAGE`
+
+### Manual Deploy Artifact Requirement
+
+For manual app/database deployment workflows (`workflow_dispatch`), provide `build_run_id` so `actions/download-artifact@v4` can fetch artifacts from the source build run.
 ```
 
 ---
