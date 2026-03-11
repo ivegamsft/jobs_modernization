@@ -13,7 +13,7 @@ Checks for and creates:
 The name of the resource group for Terraform state. Default: 'jobsite-tfstate-rg'
 
 .PARAMETER StorageAccountName
-The name of the storage account for Terraform state. Default: 'jobsitetfstate'
+The name of the storage account for Terraform state. If omitted, a unique name is generated.
 
 .PARAMETER Location
 Azure region for resources. Default: 'swedencentral'
@@ -42,7 +42,7 @@ param(
     [string]$ResourceGroupName = 'jobsite-tfstate-rg',
     
     [Parameter(Mandatory = $false)]
-    [string]$StorageAccountName = 'jobsitetfstate',
+    [string]$StorageAccountName = '',
     
     [Parameter(Mandatory = $false)]
     [string]$Location = 'swedencentral',
@@ -87,6 +87,14 @@ function Write-Error {
     Write-Host "✗ $Message" -ForegroundColor Red
 }
 
+function New-DefaultStorageAccountName {
+    param([string]$SubscriptionId)
+
+    $normalized = ($SubscriptionId -replace '-', '').ToLowerInvariant()
+    $suffix = $normalized.Substring(0, [Math]::Min(12, $normalized.Length))
+    return "jobsitetf$suffix"
+}
+
 # ============================================================================
 # Main Script
 # ============================================================================
@@ -128,6 +136,11 @@ if ($SubscriptionId) {
 $currentSub = az account show --query "{id: id, name: name}" -o json | ConvertFrom-Json
 Write-Info "Using subscription: $($currentSub.name) ($($currentSub.id))"
 
+if ([string]::IsNullOrWhiteSpace($StorageAccountName)) {
+    $StorageAccountName = New-DefaultStorageAccountName -SubscriptionId $currentSub.id
+    Write-Info "Generated storage account name: $StorageAccountName"
+}
+
 # ============================================================================
 # Create/Check Resource Group
 # ============================================================================
@@ -152,6 +165,20 @@ else {
 # ============================================================================
 
 Write-Header "Storage Account"
+
+$nameAvailability = az storage account check-name --name $StorageAccountName --query "{available: nameAvailable, reason: reason, message: message}" -o json | ConvertFrom-Json
+
+if (-not $nameAvailability.available) {
+    $existingInRg = az storage account list --resource-group $ResourceGroupName --query "[?name=='$StorageAccountName'] | length(@)" -o tsv 2>$null
+    if ($existingInRg -ne '1') {
+        Write-Error "Storage account name '$StorageAccountName' is not globally available."
+        if ($nameAvailability.message) {
+            Write-Host "  $($nameAvailability.message)" -ForegroundColor Yellow
+        }
+        Write-Host "  Re-run with a unique value, for example: -StorageAccountName jobsite$((Get-Random -Minimum 100000 -Maximum 999999))tf" -ForegroundColor Yellow
+        exit 1
+    }
+}
 
 $storageExists = az storage account exists --name $StorageAccountName --resource-group $ResourceGroupName | ConvertFrom-Json
 if ($storageExists.exists) {
@@ -182,20 +209,6 @@ else {
     }
 }
 
-# Get storage account key
-Write-Info "Retrieving storage account key..."
-$storageKey = az storage account keys list `
-    --account-name $StorageAccountName `
-    --resource-group $ResourceGroupName `
-    --query "[0].value" `
-    -o tsv
-
-if (-not $storageKey) {
-    Write-Error "Failed to retrieve storage account key"
-    exit 1
-}
-Write-Success "Storage account key retrieved"
-
 # ============================================================================
 # Create/Check Storage Container
 # ============================================================================
@@ -207,7 +220,7 @@ $containerExists = $false
 try {
     $containers = az storage container list `
         --account-name $StorageAccountName `
-        --account-key $storageKey `
+        --auth-mode login `
         --query "[?name=='$ContainerName'].name" `
         -o tsv
     
@@ -229,13 +242,14 @@ else {
         az storage container create `
             --name $ContainerName `
             --account-name $StorageAccountName `
-            --account-key $storageKey `
+            --auth-mode login `
             --public-access off | Out-Null
         
         Write-Success "Storage Container created"
     }
     catch {
-        Write-Error "Failed to create Storage Container: $_"
+        Write-Error "Failed to create Storage Container using Entra ID login: $_"
+        Write-Host "  Ensure your signed-in user has Storage Blob Data Contributor (or higher) on the storage account." -ForegroundColor Yellow
         exit 1
     }
 }

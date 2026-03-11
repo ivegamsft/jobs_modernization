@@ -315,14 +315,9 @@ GitHub Secrets Required:
   AZURE_SUBSCRIPTION_ID:  $SubscriptionId
 
 Next Steps:
-  1. Add the secrets above to GitHub: $repoPath/settings/secrets/actions
-  2. Update your workflow files to use OIDC authentication:
-     
-     - uses: azure/login@v2
-       with:
-         client-id: \${{ secrets.AZURE_CLIENT_ID }}
-         tenant-id: \${{ secrets.AZURE_TENANT_ID }}
-         subscription-id: \${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    1. Add the secrets above to GitHub: https://github.com/$repoPath/settings/secrets/actions
+    2. Configure your GitHub workflows to use the three secrets above with azure/login@v2.
+    3. Trigger a deployment workflow and confirm Azure login succeeds.
 
 "@
 

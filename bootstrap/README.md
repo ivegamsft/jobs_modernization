@@ -54,6 +54,7 @@ These bootstrap scripts automate the one-time setup of these prerequisites.
 - **PowerShell 7+** - [Install](https://aka.ms/powershell)
 - **Azure Subscription** - With Owner or User Access Administrator role
 - **Permissions** - Ability to create Azure AD applications and service principals
+- **Storage data-plane access** - If reusing an existing storage account for Terraform state, your signed-in identity may also need **Storage Blob Data Contributor** on that storage account
 
 ### Login to Azure
 
@@ -111,12 +112,12 @@ If you've forked this repository:
 **Parameters:**
 ```powershell
 -SubscriptionId       # Azure Subscription ID (optional, uses current if not provided)
--Location             # Azure region (default: YOUR REGION)
+-Location             # Azure region (default: swedencentral)
 -ResourceGroupScope   # Array of RG names for scoped permissions (optional)
 -SkipServicePrincipal # Skip SP creation if already exists
 -SkipTerraformBackend # Skip Terraform backend if not needed
--GitHubOrg            # GitHub organization (default: YOUR ORG)
--GitHubRepo           # GitHub repository (default: YOUR REPO)
+-GitHubOrg            # GitHub organization (default: chikamsoachumsft)
+-GitHubRepo           # GitHub repository (default: jobs_modernization)
 ```
 
 **Usage:**
@@ -184,9 +185,9 @@ If you've forked this repository:
 
 **Parameters:**
 ```powershell
--ResourceGroupName  # RG name (default: YOUR RG)
--StorageAccountName # Storage account name (default: YOUR STORAGE ACCOUNT)
--Location           # Azure region (default: YOUR REGION)
+-ResourceGroupName  # RG name (default: jobsite-tfstate-rg)
+-StorageAccountName # Storage account name (optional, auto-generated if omitted)
+-Location           # Azure region (default: swedencentral)
 -ContainerName      # Container name (default: tfstate)
 -SubscriptionId     # Target subscription (optional)
 ```
@@ -208,6 +209,10 @@ If you've forked this repository:
 - Storage account created
 - Container created
 - Backend configuration for `terraform init`
+
+**Note:** Storage account names are globally unique in Azure. If you do not pass `-StorageAccountName`, the script generates a unique default based on the current subscription ID.
+
+The backend script uses your Azure login (`--auth-mode login`) for container operations. This avoids failures on storage accounts where key-based authentication is disabled.
 
 ---
 
