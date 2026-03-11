@@ -197,7 +197,7 @@ Enter-PSSession -ComputerName $sql_ip -Credential (Get-Credential)
 
 **Name:** jobsite-core-dev-rg  
 **Location:** swedencentral  
-**Subscription:** 844eabcc-dc96-453b-8d45-bef3d566f3f8
+**Subscription:** <SUBSCRIPTION_ID>
 
 **Total Resources:** 40+
 

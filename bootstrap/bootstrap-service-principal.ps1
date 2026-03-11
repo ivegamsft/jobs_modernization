@@ -9,7 +9,7 @@ Creates or updates a Service Principal with:
 - Proper naming and tagging for governance
 
 .PARAMETER AppName
-The display name for the Azure AD Application. Default: 'github-actions-jobsite-deploy'
+The display name for the Azure AD Application. If omitted, generated from repository name.
 
 .PARAMETER SubscriptionId
 Azure Subscription ID where permissions will be granted. If not provided, uses current subscription.
@@ -19,10 +19,10 @@ Optional resource group name(s) to scope permissions. If not provided, grants su
 Can be a single string or array of strings.
 
 .PARAMETER GitHubOrg
-GitHub organization or user name. Default: 'ivegamsft'
+GitHub organization or user name. If not provided, inferred from git remote.
 
 .PARAMETER GitHubRepo
-GitHub repository name. Default: 'jobs_modernization'
+GitHub repository name. If not provided, inferred from git remote.
 
 .PARAMETER GitHubEnvironments
 GitHub environments to create federated credentials for. Default: @('dev', 'staging', 'prod')
@@ -37,7 +37,7 @@ Create a federated credential for main branch pushes. Default: $true
 .\bootstrap-service-principal.ps1 -ResourceGroupScope 'jobsite-dev-rg','jobsite-prod-rg'
 
 .EXAMPLE
-.\bootstrap-service-principal.ps1 -GitHubOrg 'myorg' -GitHubRepo 'myrepo' -SubscriptionId '12345678-1234-1234-1234-123456789012'
+.\bootstrap-service-principal.ps1 -GitHubOrg '<GITHUB_ORG>' -GitHubRepo '<GITHUB_REPO>' -SubscriptionId '<SUBSCRIPTION_ID>'
 
 .NOTES
 Requires:
@@ -48,7 +48,7 @@ Requires:
 
 param(
     [Parameter(Mandatory = $false)]
-    [string]$AppName = 'github-actions-jobsite-deploy',
+    [string]$AppName,
     
     [Parameter(Mandatory = $false)]
     [string]$SubscriptionId,
@@ -57,10 +57,10 @@ param(
     [string[]]$ResourceGroupScope,
     
     [Parameter(Mandatory = $false)]
-    [string]$GitHubOrg = 'ivegamsft',
+    [string]$GitHubOrg,
     
     [Parameter(Mandatory = $false)]
-    [string]$GitHubRepo = 'jobs_modernization',
+    [string]$GitHubRepo,
     
     [Parameter(Mandatory = $false)]
     [string[]]$GitHubEnvironments = @('dev', 'staging', 'prod'),
@@ -102,6 +102,34 @@ function Write-Error {
     Write-Host "✗ $Message" -ForegroundColor Red
 }
 
+function Get-GitHubRepoContext {
+    param([string]$WorkingPath)
+
+    try {
+        $remoteUrl = git -C $WorkingPath remote get-url origin 2>$null
+        if (-not $remoteUrl) {
+            return $null
+        }
+
+        $cleanUrl = $remoteUrl.Trim()
+        if ($cleanUrl -match 'github.com[:/](?<org>[^/]+)/(?<repo>[^/.]+)(?:\.git)?$') {
+            return @{ GitHubOrg = $matches['org']; GitHubRepo = $matches['repo'] }
+        }
+    }
+    catch {
+        return $null
+    }
+
+    return $null
+}
+
+function Get-DefaultAppName {
+    param([string]$RepoName)
+
+    $sanitized = ($RepoName -replace '[^a-zA-Z0-9-]', '-').ToLowerInvariant()
+    return "github-actions-$sanitized-deploy"
+}
+
 # ============================================================================
 # Main Script
 # ============================================================================
@@ -138,6 +166,30 @@ if (-not $account) {
 }
 Write-Success "Logged in as: $($account.user)"
 $tenantId = $account.tenant
+
+# Resolve GitHub repo context if not explicitly provided
+if ([string]::IsNullOrWhiteSpace($GitHubOrg) -or [string]::IsNullOrWhiteSpace($GitHubRepo)) {
+    $repoContext = Get-GitHubRepoContext -WorkingPath (Join-Path $PSScriptRoot '..')
+    if ($repoContext) {
+        if ([string]::IsNullOrWhiteSpace($GitHubOrg)) {
+            $GitHubOrg = $repoContext.GitHubOrg
+        }
+        if ([string]::IsNullOrWhiteSpace($GitHubRepo)) {
+            $GitHubRepo = $repoContext.GitHubRepo
+        }
+        Write-Info "Inferred GitHub repository: $GitHubOrg/$GitHubRepo"
+    }
+}
+
+if ([string]::IsNullOrWhiteSpace($GitHubOrg) -or [string]::IsNullOrWhiteSpace($GitHubRepo)) {
+    Write-Error "GitHubOrg and GitHubRepo are required. Pass them as parameters or run from a git repo with an origin remote."
+    exit 1
+}
+
+if ([string]::IsNullOrWhiteSpace($AppName)) {
+    $AppName = Get-DefaultAppName -RepoName $GitHubRepo
+    Write-Info "Generated AppName: $AppName"
+}
 
 # ============================================================================
 # Create or Get Service Principal

@@ -27,16 +27,16 @@ Skip Service Principal creation (if already exists).
 Skip Terraform backend creation (if already exists or not using Terraform).
 
 .PARAMETER GitHubOrg
-GitHub organization or user name. Default: 'ivegamsft'
+GitHub organization or user name. If not provided, inferred from git remote.
 
 .PARAMETER GitHubRepo
-GitHub repository name. Default: 'jobs_modernization'
+GitHub repository name. If not provided, inferred from git remote.
 
 .EXAMPLE
 .\bootstrap-azure.ps1
 
 .EXAMPLE
-.\bootstrap-azure.ps1 -SubscriptionId '12345678-1234-1234-1234-123456789012' -Location 'eastus'
+.\bootstrap-azure.ps1 -SubscriptionId '<SUBSCRIPTION_ID>' -Location '<AZURE_REGION>'
 
 .EXAMPLE
 .\bootstrap-azure.ps1 -SkipTerraformBackend
@@ -66,10 +66,10 @@ param(
     [switch]$SkipTerraformBackend,
     
     [Parameter(Mandatory = $false)]
-    [string]$GitHubOrg = 'ivegamsft',
+    [string]$GitHubOrg,
     
     [Parameter(Mandatory = $false)]
-    [string]$GitHubRepo = 'jobs_modernization'
+    [string]$GitHubRepo
 )
 
 $ErrorActionPreference = 'Stop'
@@ -103,6 +103,34 @@ function Write-Warning {
 function Write-Error {
     param([string]$Message)
     Write-Host "✗ $Message" -ForegroundColor Red
+}
+
+function Get-GitHubRepoContext {
+    param([string]$WorkingPath)
+
+    try {
+        $remoteUrl = git -C $WorkingPath remote get-url origin 2>$null
+        if (-not $remoteUrl) {
+            return $null
+        }
+
+        $cleanUrl = $remoteUrl.Trim()
+        $patterns = @(
+            'github.com[:/](?<org>[^/]+)/(?<repo>[^/.]+)(?:\.git)?$',
+            '^https://github.com/(?<org>[^/]+)/(?<repo>[^/.]+)(?:\.git)?$'
+        )
+
+        foreach ($pattern in $patterns) {
+            if ($cleanUrl -match $pattern) {
+                return @{ GitHubOrg = $matches['org']; GitHubRepo = $matches['repo'] }
+            }
+        }
+    }
+    catch {
+        return $null
+    }
+
+    return $null
 }
 
 function Test-Prerequisites {
@@ -173,6 +201,25 @@ if ($SubscriptionId) {
     $currentSub = az account show --query '{id: id, name: name}' -o json | ConvertFrom-Json
     $SubscriptionId = $currentSub.id
     Write-Info "Using current subscription: $($currentSub.name)"
+}
+
+# Resolve GitHub repo context if not explicitly provided
+if ([string]::IsNullOrWhiteSpace($GitHubOrg) -or [string]::IsNullOrWhiteSpace($GitHubRepo)) {
+    $repoContext = Get-GitHubRepoContext -WorkingPath (Join-Path $PSScriptRoot '..')
+    if ($repoContext) {
+        if ([string]::IsNullOrWhiteSpace($GitHubOrg)) {
+            $GitHubOrg = $repoContext.GitHubOrg
+        }
+        if ([string]::IsNullOrWhiteSpace($GitHubRepo)) {
+            $GitHubRepo = $repoContext.GitHubRepo
+        }
+        Write-Info "Inferred GitHub repository: $GitHubOrg/$GitHubRepo"
+    }
+}
+
+if ([string]::IsNullOrWhiteSpace($GitHubOrg) -or [string]::IsNullOrWhiteSpace($GitHubRepo)) {
+    Write-Error "GitHubOrg and GitHubRepo are required. Pass them as parameters or run from a git repo with an origin remote."
+    exit 1
 }
 
 # Summary

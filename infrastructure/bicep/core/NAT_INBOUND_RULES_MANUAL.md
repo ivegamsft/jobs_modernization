@@ -13,7 +13,7 @@ Inbound NAT rules need to be created via Azure CLI with the correct API structur
 ```bash
 # Web VM inbound rule (13389 -> 3389)
 az rest --method PUT \
-  --uri "/subscriptions/844eabcc-dc96-453b-8d45-bef3d566f3f8/resourceGroups/jobsite-core-dev-rg/providers/Microsoft.Network/natGateways/jobsite-dev-nat-ubzfsgu4p5eli/inboundNatRules/rdp-wfe?api-version=2023-11-01" \
+  --uri "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<CORE_RESOURCE_GROUP>/providers/Microsoft.Network/natGateways/<NAT_GATEWAY_NAME>/inboundNatRules/rdp-wfe?api-version=2023-11-01" \
   --body @- << EOF
 {
   "properties": {
@@ -22,7 +22,7 @@ az rest --method PUT \
     "backendPort": 3389,
     "idleTimeoutInMinutes": 4,
     "frontendIpConfiguration": {
-      "id": "/subscriptions/844eabcc-dc96-453b-8d45-bef3d566f3f8/resourceGroups/jobsite-core-dev-rg/providers/Microsoft.Network/natGateways/jobsite-dev-nat-ubzfsgu4p5eli/frontendIpConfigurations/default"
+      "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<CORE_RESOURCE_GROUP>/providers/Microsoft.Network/natGateways/<NAT_GATEWAY_NAME>/frontendIpConfigurations/default"
     }
   }
 }
@@ -30,7 +30,7 @@ EOF
 
 # SQL VM inbound rule (23389 -> 3389)
 az rest --method PUT \
-  --uri "/subscriptions/844eabcc-dc96-453b-8d45-bef3d566f3f8/resourceGroups/jobsite-core-dev-rg/providers/Microsoft.Network/natGateways/jobsite-dev-nat-ubzfsgu4p5eli/inboundNatRules/rdp-sqlvm?api-version=2023-11-01" \
+  --uri "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<CORE_RESOURCE_GROUP>/providers/Microsoft.Network/natGateways/<NAT_GATEWAY_NAME>/inboundNatRules/rdp-sqlvm?api-version=2023-11-01" \
   --body @- << EOF
 {
   "properties": {
@@ -39,7 +39,7 @@ az rest --method PUT \
     "backendPort": 3389,
     "idleTimeoutInMinutes": 4,
     "frontendIpConfiguration": {
-      "id": "/subscriptions/844eabcc-dc96-453b-8d45-bef3d566f3f8/resourceGroups/jobsite-core-dev-rg/providers/Microsoft.Network/natGateways/jobsite-dev-nat-ubzfsgu4p5eli/frontendIpConfigurations/default"
+      "id": "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<CORE_RESOURCE_GROUP>/providers/Microsoft.Network/natGateways/<NAT_GATEWAY_NAME>/frontendIpConfigurations/default"
     }
   }
 }
@@ -57,13 +57,13 @@ EOF
 
 ### Via NAT Gateway (from external networks)
 
-- **Web VM RDP**: `51.12.86.155:13389` → `10.50.0.5:3389`
-- **SQL VM RDP**: `51.12.86.155:23389` → `10.50.1.5:3389`
+- **Web VM RDP**: `<NAT_PUBLIC_IP>:13389` → `<WEB_VM_PRIVATE_IP>:3389`
+- **SQL VM RDP**: `<NAT_PUBLIC_IP>:23389` → `<SQL_VM_PRIVATE_IP>:3389`
 
 ### Direct (from same VNet)
 
-- **Web VM RDP**: `10.50.0.5:3389`
-- **SQL VM RDP**: `10.50.1.5:3389`
+- **Web VM RDP**: `<WEB_VM_PRIVATE_IP>:3389`
+- **SQL VM RDP**: `<SQL_VM_PRIVATE_IP>:3389`
 
 ## Bicep Limitations
 

@@ -79,7 +79,7 @@ cd bootstrap
 Grant Service Principal access to entire subscription:
 
 ```powershell
-.\bootstrap-azure.ps1 -SubscriptionId "12345678-1234-1234-1234-123456789012" -Location "eastus"
+.\bootstrap-azure.ps1 -SubscriptionId "<SUBSCRIPTION_ID>" -Location "<AZURE_REGION>"
 ```
 
 **Option 3: Resource Group-Scoped Permissions (More Restrictive)**
@@ -116,8 +116,8 @@ If you've forked this repository:
 -ResourceGroupScope   # Array of RG names for scoped permissions (optional)
 -SkipServicePrincipal # Skip SP creation if already exists
 -SkipTerraformBackend # Skip Terraform backend if not needed
--GitHubOrg            # GitHub organization (default: ivegamsft)
--GitHubRepo           # GitHub repository (default: jobs_modernization)
+-GitHubOrg            # GitHub organization (optional, inferred from git remote if omitted)
+-GitHubRepo           # GitHub repository (optional, inferred from git remote if omitted)
 ```
 
 **Usage:**
@@ -145,11 +145,11 @@ If you've forked this repository:
 
 **Parameters:**
 ```powershell
--AppName                    # Service Principal display name
+-AppName                    # Service Principal display name (optional, generated from repository name)
 -SubscriptionId             # Target subscription
 -ResourceGroupScope         # Optional RG scoping
--GitHubOrg                  # GitHub org
--GitHubRepo                 # GitHub repo
+-GitHubOrg                  # GitHub org (optional, inferred from git remote)
+-GitHubRepo                 # GitHub repo (optional, inferred from git remote)
 -GitHubEnvironments         # Environments for OIDC (default: dev, staging, prod)
 -CreateMainBranchCredential # Create main branch credential (default: true)
 ```
@@ -214,6 +214,8 @@ If you've forked this repository:
 
 The backend script uses your Azure login (`--auth-mode login`) for container operations. This avoids failures on storage accounts where key-based authentication is disabled.
 
+The bootstrap scripts also infer GitHub org/repository from your local `origin` remote when `-GitHubOrg` and `-GitHubRepo` are omitted.
+
 ---
 
 ## Post-Bootstrap Steps
@@ -232,9 +234,9 @@ After running the bootstrap script, you'll see output like:
 
 Add these secrets to GitHub:
 
-AZURE_CLIENT_ID=12345678-1234-1234-1234-123456789abc
-AZURE_TENANT_ID=87654321-4321-4321-4321-cba987654321
-AZURE_SUBSCRIPTION_ID=aaaabbbb-cccc-dddd-eeee-ffffffff0000
+AZURE_CLIENT_ID=<VALUE_FROM_SCRIPT_OUTPUT>
+AZURE_TENANT_ID=<VALUE_FROM_SCRIPT_OUTPUT>
+AZURE_SUBSCRIPTION_ID=<VALUE_FROM_SCRIPT_OUTPUT>
 ```
 
 **Copy these three values exactly as shown.**
@@ -250,17 +252,17 @@ Add each secret one at a time:
 
 **Secret #1: AZURE_CLIENT_ID**
 - Name: `AZURE_CLIENT_ID`
-- Value: `12345678-1234-1234-1234-123456789abc` (from bootstrap output)
+- Value: `<VALUE_FROM_SCRIPT_OUTPUT>`
 - Click **Add secret**
 
 **Secret #2: AZURE_TENANT_ID**
 - Name: `AZURE_TENANT_ID`
-- Value: `87654321-4321-4321-4321-cba987654321` (from bootstrap output)
+- Value: `<VALUE_FROM_SCRIPT_OUTPUT>`
 - Click **Add secret**
 
 **Secret #3: AZURE_SUBSCRIPTION_ID**
 - Name: `AZURE_SUBSCRIPTION_ID`
-- Value: `aaaabbbb-cccc-dddd-eeee-ffffffff0000` (from bootstrap output)
+- Value: `<VALUE_FROM_SCRIPT_OUTPUT>`
 - Click **Add secret**
 
 #### Step 3: Verify Secrets Are Configured
