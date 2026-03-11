@@ -116,7 +116,7 @@ If you've forked this repository:
 -ResourceGroupScope   # Array of RG names for scoped permissions (optional)
 -SkipServicePrincipal # Skip SP creation if already exists
 -SkipTerraformBackend # Skip Terraform backend if not needed
--GitHubOrg            # GitHub organization (default: chikamsoachumsft)
+-GitHubOrg            # GitHub organization (default: ivegamsft)
 -GitHubRepo           # GitHub repository (default: jobs_modernization)
 ```
 

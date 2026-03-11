@@ -19,7 +19,7 @@ Optional resource group name(s) to scope permissions. If not provided, grants su
 Can be a single string or array of strings.
 
 .PARAMETER GitHubOrg
-GitHub organization or user name. Default: 'chikamsoachumsft'
+GitHub organization or user name. Default: 'ivegamsft'
 
 .PARAMETER GitHubRepo
 GitHub repository name. Default: 'jobs_modernization'
@@ -57,7 +57,7 @@ param(
     [string[]]$ResourceGroupScope,
     
     [Parameter(Mandatory = $false)]
-    [string]$GitHubOrg = 'chikamsoachumsft',
+    [string]$GitHubOrg = 'ivegamsft',
     
     [Parameter(Mandatory = $false)]
     [string]$GitHubRepo = 'jobs_modernization',

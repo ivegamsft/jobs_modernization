@@ -27,7 +27,7 @@ Skip Service Principal creation (if already exists).
 Skip Terraform backend creation (if already exists or not using Terraform).
 
 .PARAMETER GitHubOrg
-GitHub organization or user name. Default: 'chikamsoachumsft'
+GitHub organization or user name. Default: 'ivegamsft'
 
 .PARAMETER GitHubRepo
 GitHub repository name. Default: 'jobs_modernization'
@@ -66,7 +66,7 @@ param(
     [switch]$SkipTerraformBackend,
     
     [Parameter(Mandatory = $false)]
-    [string]$GitHubOrg = 'chikamsoachumsft',
+    [string]$GitHubOrg = 'ivegamsft',
     
     [Parameter(Mandatory = $false)]
     [string]$GitHubRepo = 'jobs_modernization'
