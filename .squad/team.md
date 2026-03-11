@@ -22,7 +22,7 @@
 
 ## Project Context
 
-- **Owner:** ivegamsft
+- **Owner:** <redacted-user>
 - **Stack:** .NET (legacy), Python, React, Azure, Bicep, Kubernetes, SQL Server
 - **Description:** Modernizing a legacy .NET job site application through multiple configurations for learning purposes
 - **Created:** 2026-02-27

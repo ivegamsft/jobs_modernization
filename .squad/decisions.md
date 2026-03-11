@@ -630,7 +630,7 @@ The reorganization was surgical and well-executed. Documentation already account
 ## 2026-02-27: Migrate-Then-Modernize Strategy
 
 **Decision ID:** migrate-then-modernize  
-**Author:** ivegamsft (user directive)  
+**Author:** <redacted-user> (user directive)  
 **Status:** Guiding principle  
 **Impact:** High (strategy — shapes Phase 2 & 3 work)
 
@@ -666,7 +666,7 @@ This approach:
 ## 2026-02-27: Legacy App Baseline Definition
 
 **Decision ID:** legacy-baseline-definition  
-**Author:** ivegamsft (user clarification)  
+**Author:** <redacted-user> (user clarification)  
 **Status:** Reference  
 **Impact:** Medium (defines Phase 1 scope)
 
